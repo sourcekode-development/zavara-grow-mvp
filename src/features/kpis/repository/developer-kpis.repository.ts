@@ -3,7 +3,6 @@ import type {
   DeveloperKpi,
   DeveloperKpiMetric,
   DeveloperKpiWithMetrics,
-  AssignKpiRequest,
 } from '../types';
 
 /**

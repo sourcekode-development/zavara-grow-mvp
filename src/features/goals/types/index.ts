@@ -138,6 +138,9 @@ export interface Goal {
   template_id: string | null;
   title: string;
   description: string | null;
+  effort: number | null;
+  effort_description: string | null;
+  completed_effort: number;
   total_duration_days: number | null;
   status: GoalStatus;
   start_date: string | null;
@@ -147,6 +150,7 @@ export interface Goal {
   frequency_config: FrequencyConfig | null;
   current_streak: number;
   longest_streak: number;
+  last_effort_date: string | null;
   total_sessions: number;
   completed_sessions: number;
   reviewed_by: string | null;
@@ -182,6 +186,8 @@ export interface CadenceSession {
   description: string | null;
   scheduled_date: string | null;
   duration_minutes: number;
+  session_effort: number;
+  completed_effort: number;
   status: CadenceSessionStatus;
   notes: string | null;
   summary_text: string | null;
@@ -322,6 +328,8 @@ export interface CheckpointWithDetails extends Checkpoint {
 export interface CreateGoalRequest {
   title: string;
   description?: string;
+  effort?: number;
+  effort_description?: string;
   template_id?: string;
   duplicated_from?: string;
 }
@@ -329,8 +337,9 @@ export interface CreateGoalRequest {
 export interface UpdateGoalRequest {
   title?: string;
   description?: string;
-  frequency_type?: FrequencyType;
-  frequency_config?: FrequencyConfig;
+  effort?: number;
+  effort_description?: string;
+  completed_effort?: number;
   is_public?: boolean;
 }
 
@@ -356,6 +365,8 @@ export interface CreateSessionRequest {
   description?: string;
   scheduled_date?: string;
   duration_minutes?: number;
+  session_effort?: number;
+  completed_effort?: number;
 }
 
 export interface UpdateSessionRequest {
@@ -363,6 +374,8 @@ export interface UpdateSessionRequest {
   summary_text?: string;
   skip_reason?: string;
   scheduled_date?: string;
+  session_effort?: number;
+  completed_effort?: number;
 }
 
 export interface CreateCheckpointRequest {

@@ -107,6 +107,8 @@ export const createSession = async (data: CreateSessionRequest) => {
       description: data.description || null,
       scheduled_date: data.scheduled_date || null,
       duration_minutes: data.duration_minutes || 60,
+      session_effort: data.session_effort || 1,
+      completed_effort: data.completed_effort || 0,
       status: 'TO_DO',
       is_auto_generated: false,
     })
@@ -193,4 +195,39 @@ export const getGoalSessionStats = async (goalId: string) => {
   };
 
   return stats;
+};
+
+/**
+ * Get completed effort sum for a goal (COMPLETED sessions only)
+ */
+export const getGoalCompletedEffort = async (goalId: string) => {
+  const { data, error } = await supabase
+    .from('cadence_sessions')
+    .select('completed_effort')
+    .eq('goal_id', goalId)
+    .eq('status', 'COMPLETED');
+
+  if (error || !data) {
+    return 0;
+  }
+
+  const total = data.reduce((sum, row) => sum + Number(row.completed_effort || 0), 0);
+  return Number(total.toFixed(2));
+};
+
+/**
+ * Get total planned effort across all sessions for a goal
+ */
+export const getGoalPlannedEffort = async (goalId: string) => {
+  const { data, error } = await supabase
+    .from('cadence_sessions')
+    .select('session_effort')
+    .eq('goal_id', goalId);
+
+  if (error || !data) {
+    return 0;
+  }
+
+  const total = data.reduce((sum, row) => sum + Number(row.session_effort || 0), 0);
+  return Number(total.toFixed(2));
 };

@@ -4,17 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+// import { Calendar } from '@/components/ui/calendar';
+// import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+// import { Calendar as CalendarIcon } from 'lucide-react';
+// import { format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 import type { CadenceSession, CadenceSessionStatus } from '../types';
 
 interface SessionFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (sessionData: Partial<CadenceSession>) => void;
+  onSave: (sessionData: Partial<CadenceSession>) => Promise<boolean>;
   session?: CadenceSession | null;
   goalId: string;
   milestones?: Array<{ id: string; title: string }>;
@@ -28,18 +29,21 @@ export const SessionFormDialog = ({
   goalId,
   milestones = [],
 }: SessionFormDialogProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Partial<CadenceSession>>({
     goal_id: goalId,
     title: '',
     description: '',
     scheduled_date: null,
     duration_minutes: 60,
+    session_effort: 1,
+    completed_effort: 0,
     status: 'TO_DO',
     notes: '',
     milestone_id: null,
   });
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  // const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     if (session) {
@@ -47,9 +51,9 @@ export const SessionFormDialog = ({
         ...session,
         goal_id: goalId,
       });
-      if (session.scheduled_date) {
-        setSelectedDate(new Date(session.scheduled_date));
-      }
+      // if (session.scheduled_date) {
+      //   setSelectedDate(new Date(session.scheduled_date));
+      // }
     } else {
       setFormData({
         goal_id: goalId,
@@ -57,26 +61,35 @@ export const SessionFormDialog = ({
         description: '',
         scheduled_date: null,
         duration_minutes: 60,
+        session_effort: 1,
+        completed_effort: 0,
         status: 'TO_DO',
         notes: '',
         milestone_id: null,
       });
-      setSelectedDate(undefined);
+      // setSelectedDate(undefined);
     }
   }, [session, goalId]);
 
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-    setFormData({
-      ...formData,
-      scheduled_date: date ? date.toISOString().split('T')[0] : null,
-    });
-  };
+  // const handleDateSelect = (date: Date | undefined) => {
+  //   setSelectedDate(date);
+  //   setFormData({
+  //     ...formData,
+  //     scheduled_date: date ? date.toISOString().split('T')[0] : null,
+  //   });
+  // };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    onOpenChange(false);
+    setIsSubmitting(true);
+    try {
+      const success = await onSave(formData);
+      if (success) {
+        onOpenChange(false);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const statusOptions: Array<{ value: CadenceSessionStatus; label: string }> = [
@@ -144,8 +157,8 @@ export const SessionFormDialog = ({
             </div>
           )}
 
+          {/* Scheduled Date and Duration are intentionally hidden for now.
           <div className="grid grid-cols-2 gap-4">
-            {/* Scheduled Date */}
             <div className="space-y-2">
               <Label>Scheduled Date</Label>
               <Popover>
@@ -169,7 +182,6 @@ export const SessionFormDialog = ({
               </Popover>
             </div>
 
-            {/* Duration */}
             <div className="space-y-2">
               <Label htmlFor="duration">Duration (minutes)</Label>
               <Input
@@ -183,6 +195,47 @@ export const SessionFormDialog = ({
                 }
               />
             </div>
+          </div>
+          */}
+
+          <div className="space-y-2">
+            <Label htmlFor="sessionEffort">Session Effort</Label>
+            <Input
+              id="sessionEffort"
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={formData.session_effort || 1}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  session_effort: Number(e.target.value) || 1,
+                })
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Planned effort for this session. Supports decimals (example: 0.5).
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="completedEffort">Completed Effort</Label>
+            <Input
+              id="completedEffort"
+              type="number"
+              min="0"
+              step="0.1"
+              value={formData.completed_effort ?? 0}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  completed_effort: Number(e.target.value) || 0,
+                })
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Actual effort completed in this session. Supports decimals (example: 2.5).
+            </p>
           </div>
 
           {/* Status */}
@@ -224,8 +277,19 @@ export const SessionFormDialog = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90">
-              {session ? 'Update Session' : 'Add Session'}
+            <Button
+              type="submit"
+              className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting
+                ? session
+                  ? 'Updating...'
+                  : 'Creating...'
+                : session
+                  ? 'Update Session'
+                  : 'Add Session'}
             </Button>
           </div>
         </form>

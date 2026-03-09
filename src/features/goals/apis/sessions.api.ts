@@ -57,6 +57,16 @@ export const getSessionById = async (sessionId: string) => {
  * Create a new session
  */
 export const createSession = async (request: CreateSessionRequest) => {
+  if (request.session_effort !== undefined && request.session_effort <= 0) {
+    throw new Error('Session planned effort must be greater than 0');
+  }
+  if (request.completed_effort !== undefined && request.completed_effort < 0) {
+    throw new Error('Completed effort cannot be negative');
+  }
+  await assertGoalAllowsExecutionPlanning(request.goal_id);
+
+  await validatePlannedEffortForCreate(request.goal_id, request.session_effort ?? 1);
+
   const { data, error } = await sessionsRepo.createSession(request);
   
   if (error) {
@@ -66,19 +76,57 @@ export const createSession = async (request: CreateSessionRequest) => {
   // Update goal's total_sessions count
   const stats = await sessionsRepo.getGoalSessionStats(request.goal_id);
   await goalsRepo.updateGoalSessionCounts(request.goal_id, stats.total, stats.completed);
+  await syncGoalCompletedEffort(request.goal_id);
+  if (Number(data?.completed_effort || 0) > 0) {
+    await goalsRepo.applyGoalEffortStreak(request.goal_id);
+  }
 
   return data;
+};
+
+const assertGoalAllowsExecutionPlanning = async (goalId: string) => {
+  const { data: goal } = await goalsRepo.fetchGoalById(goalId);
+  if (!goal) {
+    throw new Error('Goal not found');
+  }
+
+  const allowedStatuses = new Set(['APPROVED', 'MODIFIED']);
+  if (!allowedStatuses.has(String(goal.status))) {
+    throw new Error('Sessions and checkpoints can only be created for approved goals.');
+  }
 };
 
 /**
  * Update session (status, summary, etc.)
  */
 export const updateSession = async (sessionId: string, request: UpdateSessionRequest) => {
+  if (request.session_effort !== undefined && request.session_effort <= 0) {
+    throw new Error('Session planned effort must be greater than 0');
+  }
+  if (request.completed_effort !== undefined && request.completed_effort < 0) {
+    throw new Error('Completed effort cannot be negative');
+  }
+
   const { data: session, error: fetchError } = await sessionsRepo.fetchSessionById(sessionId);
   
   if (fetchError || !session) {
     throw new Error('Session not found');
   }
+
+  const nextStatus = request.status ?? session.status;
+  if (nextStatus === 'COMPLETED') {
+    const nextCompletedEffort = Number(request.completed_effort ?? session.completed_effort ?? 0);
+    const plannedEffort = Number(session.session_effort || 0);
+    validateCompletionEffort(nextCompletedEffort, plannedEffort);
+  }
+
+  await validatePlannedEffortForUpdate(session.goal_id, session, request);
+  await validateCompletedEffortForUpdate(session.goal_id, session, request);
+  const previousCompletedEffort = Number(session.completed_effort || 0);
+  const nextCompletedEffort =
+    request.completed_effort !== undefined
+      ? Number(request.completed_effort)
+      : previousCompletedEffort;
 
   const previousStatus = session.status;
   const { data, error } = await sessionsRepo.updateSession(sessionId, request);
@@ -87,15 +135,18 @@ export const updateSession = async (sessionId: string, request: UpdateSessionReq
     throw new Error(error.message);
   }
 
-  // If status changed, update goal stats
-  if (request.status && request.status !== previousStatus) {
+  // If status or effort fields changed, update goal stats and goal effort progress
+  if (
+    (request.status && request.status !== previousStatus) ||
+    request.session_effort !== undefined ||
+    request.completed_effort !== undefined
+  ) {
     const stats = await sessionsRepo.getGoalSessionStats(session.goal_id);
     await goalsRepo.updateGoalSessionCounts(session.goal_id, stats.total, stats.completed);
-
-    // If status changed to COMPLETED, update streak
-    if (request.status === 'COMPLETED') {
-      await updateGoalStreak(session.goal_id);
-    }
+    await syncGoalCompletedEffort(session.goal_id);
+  }
+  if (nextCompletedEffort > previousCompletedEffort) {
+    await goalsRepo.applyGoalEffortStreak(session.goal_id);
   }
 
   return data;
@@ -112,6 +163,11 @@ export const startSession = async (sessionId: string) => {
  * Complete a session (IN_PROGRESS → COMPLETED)
  */
 export const completeSession = async (sessionId: string, summaryText?: string) => {
+  const session = await getSessionById(sessionId);
+  const currentCompletedEffort = Number(session.completed_effort || 0);
+  const plannedEffort = Number(session.session_effort || 0);
+  validateCompletionEffort(currentCompletedEffort, plannedEffort);
+
   return updateSession(sessionId, {
     status: 'COMPLETED',
     summary_text: summaryText,
@@ -152,6 +208,7 @@ export const deleteSession = async (sessionId: string) => {
   // Update goal's total_sessions count
   const stats = await sessionsRepo.getGoalSessionStats(session.goal_id);
   await goalsRepo.updateGoalSessionCounts(session.goal_id, stats.total, stats.completed);
+  await syncGoalCompletedEffort(session.goal_id);
 
   return true;
 };
@@ -163,60 +220,113 @@ export const getSessionStats = async (goalId: string) => {
   return sessionsRepo.getGoalSessionStats(goalId);
 };
 
-/**
- * Update goal streak (called after session completion)
- */
-const updateGoalStreak = async (goalId: string) => {
-  // Get all completed sessions for this goal, ordered by scheduled_date descending
-  const { data: sessions } = await sessionsRepo.fetchSessions({
-    goal_id: goalId,
-    status: 'COMPLETED',
-  });
+const syncGoalCompletedEffort = async (goalId: string) => {
+  const completedEffort = await sessionsRepo.getGoalCompletedEffort(goalId);
+  const { data: goal } = await goalsRepo.fetchGoalById(goalId);
+  if (!goal) {
+    throw new Error('Goal not found');
+  }
+  const totalEffort = Number(goal.effort ?? 0);
 
-  if (!sessions || sessions.length === 0) {
-    // No completed sessions, reset streak
-    await goalsRepo.updateGoalStreak(goalId, 0, 0);
+  if (totalEffort > 0 && completedEffort > totalEffort) {
+    throw new Error('Completed effort cannot exceed total effort');
+  }
+
+  await goalsRepo.updateGoal(goalId, {
+    completed_effort: completedEffort,
+  });
+};
+
+const validateCompletedEffortForUpdate = async (
+  goalId: string,
+  currentSession: Awaited<ReturnType<typeof sessionsRepo.fetchSessionById>>['data'],
+  request: UpdateSessionRequest
+) => {
+  const { data: goal } = await goalsRepo.fetchGoalById(goalId);
+  const totalEffort = Number(goal?.effort ?? 0);
+  if (!goal || totalEffort <= 0) {
     return;
   }
 
-  // Sort by scheduled_date descending (most recent first)
-  const sortedSessions = sessions.sort((a, b) => 
-    new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime()
+  const currentTotalCompletedEffort = await sessionsRepo.getGoalCompletedEffort(goalId);
+  const currentSessionCompletedEffort = Number(currentSession?.completed_effort || 0);
+  const nextSessionCompletedEffort = Number(request.completed_effort ?? currentSessionCompletedEffort);
+  const currentStatus = currentSession?.status;
+  const nextStatus = request.status ?? currentStatus;
+  const currentIncluded = currentStatus === 'COMPLETED' ? currentSessionCompletedEffort : 0;
+  const nextIncluded = nextStatus === 'COMPLETED' ? nextSessionCompletedEffort : 0;
+
+  const projectedCompletedEffort = Number(
+    (currentTotalCompletedEffort - currentIncluded + nextIncluded).toFixed(2)
   );
+  if (projectedCompletedEffort > totalEffort) {
+    throw new Error('Completed effort cannot exceed total effort');
+  }
+};
 
-  let currentStreak = 0;
-  let previousDate: Date | null = null;
-
-  // Calculate current consecutive streak
-  for (const session of sortedSessions) {
-    const sessionDate = new Date(session.scheduled_date);
-    
-    if (previousDate === null) {
-      // First session in the loop (most recent completed session)
-      currentStreak = 1;
-      previousDate = sessionDate;
-    } else {
-      // Calculate days difference
-      const daysDiff = Math.floor(
-        (previousDate.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      if (daysDiff === 1) {
-        // Consecutive day, continue streak
-        currentStreak++;
-        previousDate = sessionDate;
-      } else if (daysDiff > 1) {
-        // Gap found, streak breaks
-        break;
-      }
-      // If daysDiff === 0 (same day), skip but don't break streak
-    }
+const validateCompletionEffort = (completedEffort: number, plannedEffort: number) => {
+  if (!Number.isFinite(completedEffort) || completedEffort <= 0) {
+    throw new Error(
+      'Please enter the effort completed for this session before marking it as completed.'
+    );
   }
 
-  // Get current goal data to compare with longest_streak
+  if (!Number.isFinite(plannedEffort) || plannedEffort <= 0) {
+    throw new Error('Session planned effort is invalid.');
+  }
+
+  // Completion requires full planned effort to be finished.
+  const normalizedCompleted = Number(completedEffort.toFixed(2));
+  const normalizedPlanned = Number(plannedEffort.toFixed(2));
+  if (normalizedCompleted !== normalizedPlanned) {
+    throw new Error(
+      'Completed effort must be exactly equal to the planned effort for this session before marking it as completed.'
+    );
+  }
+};
+
+const validatePlannedEffortForCreate = async (
+  goalId: string,
+  newSessionEffort: number
+) => {
   const { data: goal } = await goalsRepo.fetchGoalById(goalId);
-  if (goal) {
-    const longestStreak = Math.max(currentStreak, goal.longest_streak);
-    await goalsRepo.updateGoalStreak(goalId, currentStreak, longestStreak);
+  const totalEffort = Number(goal?.effort ?? 0);
+  if (!goal || totalEffort <= 0) {
+    return;
+  }
+
+  const currentPlannedEffort = await sessionsRepo.getGoalPlannedEffort(goalId);
+  const projected = Number((currentPlannedEffort + newSessionEffort).toFixed(2));
+  if (projected > totalEffort) {
+    throw new Error(
+      `Total session effort (${projected}) cannot exceed goal effort (${totalEffort})`
+    );
+  }
+};
+
+const validatePlannedEffortForUpdate = async (
+  goalId: string,
+  currentSession: Awaited<ReturnType<typeof sessionsRepo.fetchSessionById>>['data'],
+  request: UpdateSessionRequest
+) => {
+  const { data: goal } = await goalsRepo.fetchGoalById(goalId);
+  const totalEffort = Number(goal?.effort ?? 0);
+  if (!goal || totalEffort <= 0) {
+    return;
+  }
+
+  if (request.session_effort === undefined) {
+    return;
+  }
+
+  const currentPlannedEffort = await sessionsRepo.getGoalPlannedEffort(goalId);
+  const currentEffort = Number(currentSession?.session_effort || 0);
+  const nextEffort = Number(request.session_effort);
+
+  const projected = Number((currentPlannedEffort - currentEffort + nextEffort).toFixed(2));
+  if (projected > totalEffort) {
+    throw new Error(
+      `Total session effort (${projected}) cannot exceed goal effort (${totalEffort})`
+    );
   }
 };

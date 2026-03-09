@@ -14,20 +14,26 @@ export const TodaySessionsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { todaysSessions, isLoading, error, refetch } = useTodaysSessions(user?.id);
-  const { startSession, completeSession, isLoading: mutationLoading } = useSessionMutations();
+  const { startSession, completeSession, isLoading: mutationLoading, error: mutationError } = useSessionMutations();
 
   const handleStartSession = async (sessionId: string) => {
-    await startSession(sessionId);
-    toast.success('Session started!');
-    // Refetch to get updated data
-    refetch();
+    const errorMessage = await startSession(sessionId);
+    if (!errorMessage) {
+      toast.success('Session started!');
+      refetch();
+      return;
+    }
+    toast.error(errorMessage || mutationError || 'Failed to start session');
   };
 
   const handleCompleteSession = async (sessionId: string) => {
-    await completeSession(sessionId);
-    toast.success('Session completed! 🎉');
-    // Refetch to get updated data
-    refetch();
+    const errorMessage = await completeSession(sessionId);
+    if (!errorMessage) {
+      toast.success('Session completed! 🎉');
+      refetch();
+      return;
+    }
+    toast.error(errorMessage || mutationError || 'Failed to complete session');
   };
 
   const scheduledSessions = todaysSessions.filter((s) => s.status === 'TO_DO');

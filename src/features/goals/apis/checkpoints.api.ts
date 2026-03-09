@@ -51,6 +51,10 @@ export const createCheckpoint = async (request: CreateCheckpointRequest) => {
   if (!goal) {
     throw new Error('Goal not found');
   }
+  const allowedStatuses = new Set(['APPROVED', 'MODIFIED']);
+  if (!allowedStatuses.has(String(goal.status))) {
+    throw new Error('Sessions and checkpoints can only be created for approved goals.');
+  }
 
   const { data, error } = await checkpointsRepo.createCheckpoint(request);
   

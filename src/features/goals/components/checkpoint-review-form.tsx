@@ -98,10 +98,6 @@ export const CheckpointReviewForm = ({
             <p className="text-sm text-muted-foreground">Goal</p>
             <p className="font-medium">{checkpoint.goal?.title || 'N/A'}</p>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Milestone</p>
-            <p className="font-medium">{checkpoint.milestone?.title || 'N/A'}</p>
-          </div>
           <div className="grid grid-cols-2 gap-4">
             {checkpoint.scheduled_date && (
               <div>

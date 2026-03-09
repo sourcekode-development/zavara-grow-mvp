@@ -94,11 +94,15 @@ export const createGoal = async (userId: string, data: CreateGoalRequest) => {
       user_id: userId,
       title: data.title,
       description: data.description || null,
+      effort: data.effort ?? null,
+      effort_description: data.effort_description || null,
+      completed_effort: 0,
       template_id: data.template_id || null,
       duplicated_from: data.duplicated_from || null,
       status: 'DRAFT',
       current_streak: 0,
       longest_streak: 0,
+      last_effort_date: null,
       total_sessions: 0,
       completed_sessions: 0,
       is_public: false,
@@ -177,6 +181,14 @@ export const updateGoalSessionCounts = async (
     .eq('id', goalId)
     .select()
     .single();
+};
+
+/**
+ * Apply streak update for a goal when completed effort increases.
+ * The streak algorithm runs in DB function for concurrency safety.
+ */
+export const applyGoalEffortStreak = async (goalId: string) => {
+  return supabase.rpc('apply_goal_effort_streak', { p_goal_id: goalId });
 };
 
 /**

@@ -14,13 +14,16 @@ interface GoalCardProps {
 export const GoalCard = ({ goal }: GoalCardProps) => {
   const navigate = useNavigate();
   
-  const progressPercentage = goal.total_sessions > 0
-    ? Math.round((goal.completed_sessions / goal.total_sessions) * 100)
+  const totalEffort = Number(goal.effort ?? 0);
+  const completedEffort = Number(goal.completed_effort ?? 0);
+  const progressPercentage = totalEffort > 0
+    ? Math.round((completedEffort / totalEffort) * 100)
     : 0;
 
   const canEdit = goal.status === 'DRAFT' || goal.status === 'CHANGES_REQUESTED';
   const canStart = goal.status === 'APPROVED';
   const isActive = goal.status === 'IN_PROGRESS';
+  const isRejected = goal.status === 'ABANDONED';
   
   const checkpointCount = goal.checkpoints?.length || 0;
   const pendingCheckpoints = goal.checkpoints?.filter(cp => 
@@ -28,8 +31,15 @@ export const GoalCard = ({ goal }: GoalCardProps) => {
   ).length || 0;
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-      <CardHeader className="pb-3" onClick={() => navigate(`/goals/${goal.id}`)}>
+    <Card className={`hover:shadow-md transition-shadow group ${isRejected ? '' : 'cursor-pointer'}`}>
+      <CardHeader
+        className="pb-3"
+        onClick={() => {
+          if (!isRejected) {
+            navigate(`/goals/${goal.id}`);
+          }
+        }}
+      >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg group-hover:text-[#3DCF8E] transition-colors">
@@ -47,7 +57,7 @@ export const GoalCard = ({ goal }: GoalCardProps) => {
 
       <CardContent className="space-y-3">
         {/* Progress Bar */}
-        {goal.total_sessions > 0 && (
+        {totalEffort > 0 && (
           <div className="space-y-1">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Progress</span>
@@ -63,11 +73,11 @@ export const GoalCard = ({ goal }: GoalCardProps) => {
             <StreakBadge streak={goal.current_streak} size="sm" />
           )}
           
-          {goal.total_sessions > 0 && (
+          {totalEffort > 0 && (
             <div className="flex items-center gap-1">
               <Target className="h-4 w-4" />
               <span>
-                {goal.completed_sessions}/{goal.total_sessions} sessions
+                {completedEffort}/{totalEffort} effort
               </span>
             </div>
           )}
@@ -99,17 +109,23 @@ export const GoalCard = ({ goal }: GoalCardProps) => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/goals/${goal.id}`);
-            }}
-          >
-            View Details
-          </Button>
+          {isRejected ? (
+            <div className="flex-1 text-sm font-medium text-red-600 dark:text-red-400">
+              Status: Not Accepted
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/goals/${goal.id}`);
+              }}
+            >
+              View Details
+            </Button>
+          )}
 
           {canEdit && (
             <Button

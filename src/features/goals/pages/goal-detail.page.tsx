@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGoal } from '../hooks/useGoals';
 import { useGoalActions } from '../hooks/useGoalActions';
@@ -17,7 +18,7 @@ import { useAuthStore } from '@/features/auth/store/auth.store';
 import { useSessionMutations } from '../hooks/useSessions';
 import { useCheckpoints } from '../hooks/useCheckpoints';
 import { toast } from 'sonner';
-import type { CadenceSession, CreateSessionRequest, Assessment } from '../types';
+import type { Assessment, CadenceSession, CreateSessionRequest } from '../types';
 
 export const GoalDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,8 +33,8 @@ export const GoalDetailPage = () => {
     isLoading: actionLoading,
     error: actionError,
   } = useGoalActions();
-  
-  const { createSession, updateSession, deleteSession, isLoading: sessionLoading } = useSessionMutations();
+
+  const { createSession, updateSession, deleteSession, isLoading: sessionLoading, error: sessionError } = useSessionMutations();
   const { markCheckpointReady, getAssessment, isLoading: checkpointLoading } = useCheckpoints();
 
   const [showStartDialog, setShowStartDialog] = useState(false);
@@ -48,6 +49,12 @@ export const GoalDetailPage = () => {
   const canStart = goal?.status === 'APPROVED';
   const canComplete = goal?.status === 'IN_PROGRESS';
   const isOwner = goal?.user_id === user?.id;
+  const isRejectedGoal = goal?.status === 'ABANDONED';
+  const requiresChanges = goal?.status === 'CHANGES_REQUESTED';
+  const canCreateExecutionItems = goal?.status === 'APPROVED';
+  const createBlockedReason = requiresChanges
+    ? 'This goal requires modifications before you can create sessions or checkpoints.'
+    : 'Sessions and checkpoints can only be created for approved goals.';
 
   const handleEdit = () => {
     navigate(`/goals/${id}/edit`);
@@ -55,19 +62,13 @@ export const GoalDetailPage = () => {
 
   const handleSubmit = async (reviewerId: string) => {
     if (!id) return;
-    
-    console.log('🚀 Submitting goal for review:', { goalId: id, reviewerId });
-    
+
     const success = await submitForReview(id, reviewerId);
-    
-    console.log('✅ Submit result:', success, 'Error:', actionError);
-    
     if (success) {
       toast.success('Goal submitted for review');
       setShowSubmitDialog(false);
       refetch();
     } else {
-      console.error('❌ Submit failed. Error message:', actionError);
       toast.error(actionError || 'Failed to submit goal. Please try again.');
     }
   };
@@ -88,7 +89,7 @@ export const GoalDetailPage = () => {
     if (!id) return;
     const success = await completeGoal(id);
     if (success) {
-      toast.success('Congratulations! Goal completed! 🎉');
+      toast.success('Congratulations! Goal completed!');
       setShowCompleteDialog(false);
       refetch();
     } else {
@@ -101,42 +102,9 @@ export const GoalDetailPage = () => {
     const success = await abandonGoal(id);
     if (success) {
       toast.success('Goal deleted');
-      // Navigation handled by abandonGoal
     } else {
       toast.error(actionError || 'Failed to delete goal');
     }
-  };
-
-  const handleAddSession = async (sessionData: Partial<CadenceSession>) => {
-    if (!id) return;
-    const requestData: CreateSessionRequest = {
-      goal_id: id,
-      milestone_id: sessionData.milestone_id || undefined,
-      title: sessionData.title || undefined,
-      description: sessionData.description || undefined,
-      scheduled_date: sessionData.scheduled_date || undefined,
-      duration_minutes: sessionData.duration_minutes,
-    };
-    const session = await createSession(requestData);
-    if (session) {
-      toast.success('Session added successfully');
-      refetch();
-    }
-  };
-
-  const handleUpdateSession = async (sessionId: string, sessionData: Partial<CadenceSession>) => {
-    await updateSession(sessionId, {
-      ...sessionData,
-      milestone_id: sessionData.milestone_id || undefined,
-    });
-    toast.success('Session updated successfully');
-    refetch();
-  };
-
-  const handleDeleteSession = async (sessionId: string) => {
-    await deleteSession(sessionId);
-    toast.success('Session deleted successfully');
-    refetch();
   };
 
   const handleMarkCheckpointReady = async (checkpointId: string) => {
@@ -144,6 +112,57 @@ export const GoalDetailPage = () => {
     if (success) {
       refetch();
     }
+  };
+
+  const handleAddSession = async (sessionData: Partial<CadenceSession>): Promise<boolean> => {
+    if (!id) return false;
+
+    const requestData: CreateSessionRequest = {
+      goal_id: id,
+      milestone_id: sessionData.milestone_id || undefined,
+      title: sessionData.title || undefined,
+      description: sessionData.description || undefined,
+      scheduled_date: sessionData.scheduled_date || undefined,
+      duration_minutes: sessionData.duration_minutes,
+      session_effort: sessionData.session_effort || 1,
+      completed_effort: sessionData.completed_effort ?? 0,
+    };
+
+    const session = await createSession(requestData);
+    if (session) {
+      toast.success('Session added successfully');
+      await refetch();
+      return true;
+    }
+    toast.warning(
+      sessionError || 'Total session effort cannot exceed goal effort. Please reduce session values.'
+    );
+    return false;
+  };
+
+  const handleUpdateSession = async (
+    sessionId: string,
+    sessionData: Partial<CadenceSession>
+  ): Promise<boolean> => {
+    const success = await updateSession(sessionId, {
+      ...sessionData,
+      milestone_id: sessionData.milestone_id || undefined,
+    });
+    if (success) {
+      toast.success('Session updated successfully');
+      await refetch();
+      return true;
+    }
+    toast.warning(
+      sessionError || 'Total session effort cannot exceed goal effort. Please reduce session values.'
+    );
+    return false;
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    await deleteSession(sessionId);
+    toast.success('Session deleted successfully');
+    await refetch();
   };
 
   const handleViewAssessment = async (checkpointId: string) => {
@@ -159,13 +178,10 @@ export const GoalDetailPage = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        {/* Header Skeleton */}
         <div className="space-y-2">
           <Skeleton className="h-8 w-32" />
           <Skeleton className="h-10 w-96" />
         </div>
-
-        {/* Content Skeleton */}
         <div className="grid gap-6 md:grid-cols-2">
           <Skeleton className="h-96" />
           <Skeleton className="h-96" />
@@ -182,9 +198,7 @@ export const GoalDetailPage = () => {
           Back to Goals
         </Button>
         <div className="rounded-lg bg-red-50 dark:bg-red-900/10 p-8 text-center">
-          <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
-            Goal Not Found
-          </h2>
+          <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Goal Not Found</h2>
           <p className="text-sm text-red-600/80 dark:text-red-400/80">
             {error || 'The goal you are looking for does not exist or you do not have access to it.'}
           </p>
@@ -193,32 +207,44 @@ export const GoalDetailPage = () => {
     );
   }
 
+  if (isRejectedGoal) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={() => navigate('/goals')}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Goals
+        </Button>
+        <div className="rounded-lg bg-red-50 dark:bg-red-900/10 p-8 text-center">
+          <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
+            Status: Not Accepted
+          </h2>
+          <p className="text-sm text-red-600/80 dark:text-red-400/80">
+            This goal was rejected during review and cannot be opened for review actions.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Back Button */}
       <Button variant="ghost" onClick={() => navigate('/goals')} className="mb-2">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Goals
       </Button>
 
-      {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">
-              {goal.title}
-            </h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">{goal.title}</h1>
             <div className="flex items-center gap-2">
               <GoalStatusBadge status={goal.status} />
               {goal.creator && (
-                <span className="text-sm text-muted-foreground">
-                  Created by {goal.creator.full_name}
-                </span>
+                <span className="text-sm text-muted-foreground">Created by {goal.creator.full_name}</span>
               )}
             </div>
           </div>
 
-          {/* Actions */}
           {isOwner && (
             <div className="flex items-center gap-2 shrink-0">
               {canEdit && (
@@ -276,7 +302,6 @@ export const GoalDetailPage = () => {
         </div>
       </div>
 
-      {/* Confirmation Dialogs */}
       <ReviewerSelectionDialog
         open={showSubmitDialog}
         onOpenChange={setShowSubmitDialog}
@@ -288,7 +313,7 @@ export const GoalDetailPage = () => {
         open={showStartDialog}
         onOpenChange={setShowStartDialog}
         title="Start Goal"
-        description="Ready to begin your upskilling journey? Starting this goal will activate daily tracking and streak monitoring."
+        description="Ready to begin this goal?"
         actionLabel="Start Goal"
         onConfirm={handleStart}
       />
@@ -297,7 +322,7 @@ export const GoalDetailPage = () => {
         open={showCompleteDialog}
         onOpenChange={setShowCompleteDialog}
         title="Complete Goal"
-        description="Congratulations on finishing! Mark this goal as completed to celebrate your achievement."
+        description="Mark this goal as completed."
         actionLabel="Complete"
         onConfirm={handleComplete}
       />
@@ -306,89 +331,64 @@ export const GoalDetailPage = () => {
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         title="Delete Goal"
-        description="This will permanently delete this goal. This action cannot be undone."
+        description="This will set the goal as abandoned."
         actionLabel="Delete"
         onConfirm={handleDelete}
         variant="destructive"
       />
 
-      {/* Content Grid */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Left Column */}
         <div className="space-y-6">
           <GoalOverview goal={goal} />
         </div>
 
-        {/* Right Column */}
         <div className="space-y-6">
           <GoalProgress goal={goal} />
         </div>
       </div>
 
-      {/* Milestones Section */}
-      {goal.milestones && goal.milestones.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold">Milestones</h2>
-          <div className="space-y-3">
-            {goal.milestones.map((milestone, index) => (
-              <div
-                key={milestone.id}
-                className="p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#3DCF8E]/10 text-[#3DCF8E] font-semibold text-sm shrink-0">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold">{milestone.title}</h3>
-                    {milestone.description && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {milestone.description}
-                      </p>
-                    )}
-                    {milestone.duration_days && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Duration: {milestone.duration_days} days
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                    {milestone.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Cadence Sessions Section */}
       <div className="space-y-4">
         <h2 className="text-2xl font-bold">Cadence Sessions</h2>
         <SessionsEditor
           sessions={goal.active_sessions || []}
           goalId={id!}
-          milestones={goal.milestones?.map((m) => ({ id: m.id, title: m.title }))}
+          milestones={[]}
           onAddSession={handleAddSession}
           onUpdateSession={handleUpdateSession}
           onDeleteSession={handleDeleteSession}
           isLoading={sessionLoading}
+          canCreate={canCreateExecutionItems}
+          hideCreateActions={isRejectedGoal}
+          createBlockedReason={createBlockedReason}
         />
       </div>
 
-      {/* Checkpoints Section */}
       {goal.checkpoints && goal.checkpoints.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Checkpoints</h2>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigate(`/goals/${id}/edit?tab=checkpoints`)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Checkpoint
-            </Button>
+            {isRejectedGoal ? (
+              <div className="text-sm font-medium text-red-600 dark:text-red-400">
+                Status: Not Accepted
+              </div>
+            ) : canCreateExecutionItems ? (
+              <Button size="sm" variant="outline" onClick={() => navigate(`/goals/${id}/edit?tab=checkpoints`)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Checkpoint
+              </Button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button size="sm" variant="outline" disabled>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Checkpoint
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{createBlockedReason}</TooltipContent>
+              </Tooltip>
+            )}
           </div>
           <div className="space-y-3">
             {goal.checkpoints.map((checkpoint) => (
@@ -399,7 +399,7 @@ export const GoalDetailPage = () => {
                 onViewAssessment={handleViewAssessment}
                 isOwner={goal.user_id === user?.id}
                 isReviewer={checkpoint.assigned_reviewer_id === user?.id}
-                canEdit={true}
+                canEdit
                 isLoading={checkpointLoading}
               />
             ))}
@@ -407,28 +407,44 @@ export const GoalDetailPage = () => {
         </div>
       )}
 
-      {/* Empty Checkpoints State */}
       {(!goal.checkpoints || goal.checkpoints.length === 0) && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Checkpoints</h2>
           <div className="p-8 border-2 border-dashed rounded-lg text-center">
             <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-sm text-muted-foreground mb-4">
-              No checkpoints configured yet. Add checkpoints to track and validate progress at key milestones.
+              No checkpoints configured yet. Add checkpoints to validate progress.
             </p>
-            <Button
-              size="sm"
-              onClick={() => navigate(`/goals/${id}/edit?tab=checkpoints`)}
-              className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add First Checkpoint
-            </Button>
+            {isRejectedGoal ? (
+              <div className="text-sm font-medium text-red-600 dark:text-red-400">
+                Status: Not Accepted
+              </div>
+            ) : canCreateExecutionItems ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/goals/${id}/edit?tab=checkpoints`)}
+                className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Checkpoint
+              </Button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button size="sm" className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90" disabled>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Checkpoint
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{createBlockedReason}</TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </div>
       )}
 
-      {/* Assessment View Dialog */}
       {selectedAssessment && (
         <AssessmentViewDialog
           open={showAssessmentDialog}

@@ -3,7 +3,12 @@
 // ============================================================================
 
 import { create } from 'zustand';
-import type { CadenceSession, SessionsQueryFilters, UpdateSessionRequest } from '../types';
+import type {
+  CadenceSession,
+  SessionsQueryFilters,
+  CreateSessionRequest,
+  UpdateSessionRequest,
+} from '../types';
 import * as sessionsApi from '../apis/sessions.api';
 
 interface SessionsState {
@@ -16,15 +21,10 @@ interface SessionsState {
   // Actions
   fetchSessions: (filters?: SessionsQueryFilters) => Promise<void>;
   fetchTodaysSessions: (userId: string) => Promise<void>;
-  createSession: (data: {
-    goal_id: string;
-    milestone_id?: string;
-    title?: string;
-    scheduled_date?: string;
-  }) => Promise<CadenceSession | null>;
-  updateSession: (sessionId: string, data: Partial<CadenceSession>) => Promise<void>;
-  startSession: (sessionId: string) => Promise<void>;
-  completeSession: (sessionId: string, summary?: string) => Promise<void>;
+  createSession: (data: CreateSessionRequest) => Promise<CadenceSession | null>;
+  updateSession: (sessionId: string, data: Partial<CadenceSession>) => Promise<boolean>;
+  startSession: (sessionId: string) => Promise<string | null>;
+  completeSession: (sessionId: string, summary?: string) => Promise<string | null>;
   skipSession: (sessionId: string, reason?: string) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
   clearError: () => void;
@@ -103,11 +103,13 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
         ),
         isLoading: false,
       }));
+      return true;
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to update session',
         isLoading: false,
       });
+      return false;
     }
   },
 
@@ -127,11 +129,14 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
         ),
         isLoading: false,
       }));
+      return null;
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to start session';
       set({
-        error: error instanceof Error ? error.message : 'Failed to start session',
+        error: message,
         isLoading: false,
       });
+      return message;
     }
   },
 
@@ -155,11 +160,14 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
         ),
         isLoading: false,
       }));
+      return null;
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to complete session';
       set({
-        error: error instanceof Error ? error.message : 'Failed to complete session',
+        error: message,
         isLoading: false,
       });
+      return message;
     }
   },
 

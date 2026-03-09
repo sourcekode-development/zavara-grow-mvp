@@ -119,7 +119,9 @@ export const AppRouter = () => {
             <Route path="/goals/review" element={<GoalsReviewPage />} />
             <Route path="/goals/:id" element={<GoalDetailPage />} />
             <Route path="/goals/:id/edit" element={<GoalEditPage />} />
-            <Route path="/sessions/today" element={<TodaySessionsPage />} />            <Route path="/goals/checkpoints/my" element={<MyCheckpointsPage />} />            <Route path="/checkpoints" element={<CheckpointsListPage />} />
+            <Route path="/sessions/today" element={<TodaySessionsPage />} />
+            <Route path="/goals/checkpoints/my" element={<MyCheckpointsPage />} />
+            <Route path="/checkpoints" element={<CheckpointsListPage />} />
             
             {/* KPI Routes */}
             <Route path="/kpis/templates" element={<KpiTemplatesPage />} />
