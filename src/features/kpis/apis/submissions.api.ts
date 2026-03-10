@@ -1,11 +1,16 @@
 import { submissionsRepository } from '../repository/submissions.repository';
 import { developerKpisRepository } from '../repository/developer-kpis.repository';
+import { claimsStorageRepository } from '../repository/claims-storage.repository';
 import type {
   KpiMetricSubmissionWithDetails,
   KpiSubmissionFilters,
   CreateSubmissionRequest,
   ReviewSubmissionRequest,
 } from '../types';
+
+const MAX_SCREENSHOTS = 2;
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png']);
 
 /**
  * API Layer for KPI Submissions
@@ -47,7 +52,8 @@ export const submissionsApi = {
    * Submit a claim (Developer action)
    */
   async submitClaim(
-    request: CreateSubmissionRequest
+    request: CreateSubmissionRequest,
+    screenshotFiles: File[] = []
   ): Promise<{ data: any | null; error?: string }> {
     // Validation
     if (!request.metric_id) {
@@ -62,14 +68,66 @@ export const submissionsApi = {
       return { data: null, error: 'Description is required' };
     }
 
-    // Create submission
-    const { data, error } = await submissionsRepository.create(request);
+    if (screenshotFiles.length > MAX_SCREENSHOTS) {
+      return { data: null, error: 'You can upload a maximum of 2 screenshots.' };
+    }
+    for (const file of screenshotFiles) {
+      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+        return { data: null, error: 'Only JPG, JPEG, and PNG images are allowed.' };
+      }
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        return { data: null, error: 'Each screenshot must be 5MB or smaller.' };
+      }
+    }
 
-    if (error) {
+    // Create submission
+    const { data, error } = await submissionsRepository.create({
+      ...request,
+      attachments: request.attachments || [],
+      screenshot_paths: [],
+    });
+
+    if (error || !data) {
       return { data: null, error: 'Failed to create submission' };
     }
 
-    return { data };
+    if (screenshotFiles.length === 0) {
+      return { data };
+    }
+
+    const uploadedPaths: string[] = [];
+
+    for (const file of screenshotFiles) {
+      const { data: uploadData, error: uploadError } =
+        await claimsStorageRepository.uploadClaimScreenshot({
+          developerId: request.developer_id,
+          submissionId: data.id,
+          file,
+        });
+
+      if (uploadError || !uploadData) {
+        await claimsStorageRepository.removeClaimScreenshots(uploadedPaths);
+        await submissionsRepository.delete(data.id);
+        return { data: null, error: 'Failed to upload screenshot. Please try again.' };
+      }
+
+      uploadedPaths.push(uploadData.path);
+    }
+
+    const { data: updatedSubmission, error: updateError } = await submissionsRepository.update(
+      data.id,
+      {
+        screenshot_paths: uploadedPaths,
+      }
+    );
+
+    if (updateError || !updatedSubmission) {
+      await claimsStorageRepository.removeClaimScreenshots(uploadedPaths);
+      await submissionsRepository.delete(data.id);
+      return { data: null, error: 'Failed to save claim screenshots. Please try again.' };
+    }
+
+    return { data: updatedSubmission };
   },
 
   /**

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Dialog,
@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useSubmitClaim } from '../hooks/useSubmissions';
 import { developerKpisRepository } from '../repository/developer-kpis.repository';
 import type { DeveloperKpiMetric } from '../types';
+import { X } from 'lucide-react';
 
 interface SubmitClaimDialogProps {
   open: boolean;
@@ -28,6 +29,16 @@ interface ClaimFormData {
   evidence_url: string;
 }
 
+interface ScreenshotPreview {
+  id: string;
+  file: File;
+  previewUrl: string;
+}
+
+const MAX_SCREENSHOTS = 2;
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png']);
+
 export const SubmitClaimDialog = ({
   open,
   onOpenChange,
@@ -37,6 +48,8 @@ export const SubmitClaimDialog = ({
   const [metric, setMetric] = useState<DeveloperKpiMetric | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [screenshots, setScreenshots] = useState<ScreenshotPreview[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { submitClaim } = useSubmitClaim();
 
@@ -47,6 +60,28 @@ export const SubmitClaimDialog = ({
         evidence_url: '',
       },
     });
+
+  const clearScreenshots = () => {
+    setScreenshots((previous) => {
+      previous.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      return [];
+    });
+  };
+
+  useEffect(() => {
+    if (!open) {
+      clearScreenshots();
+      reset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    return () => {
+      clearScreenshots();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch metric details
   useEffect(() => {
@@ -72,16 +107,15 @@ export const SubmitClaimDialog = ({
 
     setIsSubmitting(true);
 
-    const attachments = data.evidence_url ? [data.evidence_url] : [];
-
     const result = await submitClaim({
       metric_id: metricId,
       description: data.description,
-      attachments,
-    });
+      attachments: data.evidence_url ? [data.evidence_url] : [],
+    }, screenshots.map((item) => item.file));
 
     if (result.data && !result.error) {
       toast.success('Claim submitted successfully');
+      clearScreenshots();
       reset();
       onOpenChange(false);
       onSuccess?.();
@@ -90,6 +124,58 @@ export const SubmitClaimDialog = ({
     }
 
     setIsSubmitting(false);
+  };
+
+  const removeScreenshot = (id: string) => {
+    setScreenshots((previous) => {
+      const target = previous.find((item) => item.id === id);
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return previous.filter((item) => item.id !== id);
+    });
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFilesSelected = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files || []);
+
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    if (screenshots.length + selectedFiles.length > MAX_SCREENSHOTS) {
+      toast.error('You can upload a maximum of 2 screenshots.');
+      event.target.value = '';
+      return;
+    }
+
+    const nextFiles: ScreenshotPreview[] = [];
+    for (const file of selectedFiles) {
+      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+        toast.error('Only JPG, JPEG, and PNG images are allowed.');
+        event.target.value = '';
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast.error('Each screenshot must be 5MB or smaller.');
+        event.target.value = '';
+        return;
+      }
+
+      nextFiles.push({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+      });
+    }
+
+    setScreenshots((previous) => [...previous, ...nextFiles]);
+    event.target.value = '';
   };
 
   const remaining = metric
@@ -154,10 +240,10 @@ export const SubmitClaimDialog = ({
               )}
             </div>
 
-            {/* Evidence URL */}
             <div className="space-y-2">
               <Label htmlFor="evidence_url">Evidence URL (Optional)</Label>
               <Input
+                id="evidence_url"
                 type="url"
                 {...register('evidence_url')}
                 placeholder="https://github.com/..."
@@ -167,11 +253,65 @@ export const SubmitClaimDialog = ({
               </p>
             </div>
 
+            <div className="space-y-2">
+              <Label>Upload Screenshots (Max 2)</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/jpg,image/png"
+                multiple
+                className="hidden"
+                onChange={handleFilesSelected}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleUploadClick}
+                disabled={isSubmitting || screenshots.length >= MAX_SCREENSHOTS}
+              >
+                Upload Screenshot
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Only JPG/PNG images. Maximum 2 screenshots, 5MB each.
+              </p>
+            </div>
+
+            {screenshots.length > 0 && (
+              <div className="space-y-2">
+                <Label>Preview</Label>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {screenshots.map((item) => (
+                    <div key={item.id} className="rounded-lg border p-2">
+                      <img
+                        src={item.previewUrl}
+                        alt={item.file.name}
+                        className="h-40 w-full rounded object-cover"
+                      />
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <p className="truncate text-xs text-muted-foreground">{item.file.name}</p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeScreenshot(item.id)}
+                          disabled={isSubmitting}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
+                  clearScreenshots();
                   reset();
                   onOpenChange(false);
                 }}

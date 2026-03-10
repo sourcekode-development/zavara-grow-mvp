@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { useReviewSubmission } from '../hooks/useSubmissions';
+import { claimsStorageApi } from '../apis/claims-storage.api';
 import type { KpiMetricSubmissionWithDetails } from '../types';
 
 interface ReviewClaimDrawerProps {
@@ -46,7 +47,42 @@ export const ReviewClaimDrawer = ({
   const [reviewerComments, setReviewerComments] = useState('');
   const [pointsAwarded, setPointsAwarded] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signedScreenshotUrls, setSignedScreenshotUrls] = useState<string[]>([]);
+  const [isLoadingScreenshots, setIsLoadingScreenshots] = useState(false);
   const { reviewSubmission } = useReviewSubmission();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadScreenshotUrls = async () => {
+      if (!open || !submission?.screenshot_paths?.length) {
+        if (isMounted) {
+          setSignedScreenshotUrls([]);
+          setIsLoadingScreenshots(false);
+        }
+        return;
+      }
+
+      if (isMounted) {
+        setIsLoadingScreenshots(true);
+      }
+
+      const urls = await Promise.all(
+        submission.screenshot_paths.map((path) => claimsStorageApi.getSignedScreenshotUrl(path))
+      );
+
+      if (isMounted) {
+        setSignedScreenshotUrls(urls.filter((url): url is string => Boolean(url)));
+        setIsLoadingScreenshots(false);
+      }
+    };
+
+    void loadScreenshotUrls();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open, submission]);
 
   const handleReview = async (status: 'APPROVED' | 'REJECTED') => {
     if (!submission) return;
@@ -197,6 +233,41 @@ export const ReviewClaimDrawer = ({
                   <ExternalLink className="h-4 w-4" />
                   View Evidence
                 </a>
+              </CardContent>
+            </Card>
+          )}
+
+          {submission.screenshot_paths && submission.screenshot_paths.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Screenshots</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingScreenshots ? (
+                  <p className="text-sm text-muted-foreground">Loading screenshots...</p>
+                ) : signedScreenshotUrls.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Unable to load screenshots. Please check storage access policies.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {signedScreenshotUrls.map((screenshotUrl) => (
+                      <a
+                        key={screenshotUrl}
+                        href={screenshotUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block rounded border p-2 hover:bg-muted/40"
+                      >
+                        <img
+                          src={screenshotUrl}
+                          alt="Claim screenshot"
+                          className="h-36 w-full rounded object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

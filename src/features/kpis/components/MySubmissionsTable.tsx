@@ -9,6 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, ExternalLink } from 'lucide-react';
+import { claimsStorageApi } from '../apis/claims-storage.api';
 import type { KpiMetricSubmissionWithDetails } from '../types';
 
 interface MySubmissionsTableProps {
@@ -56,8 +57,15 @@ export const MySubmissionsTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {submissions.map((submission) => (
-            <TableRow key={submission.id}>
+          {submissions.map((submission) => {
+            const screenshotPath = submission.screenshot_paths?.[0];
+            const screenshotUrl = screenshotPath
+              ? claimsStorageApi.getScreenshotUrl(screenshotPath)
+              : null;
+            const evidenceUrl = screenshotUrl || submission.attachments?.[0] || null;
+
+            return (
+              <TableRow key={submission.id}>
               <TableCell className="font-medium">
                 {submission.metric?.name || 'N/A'}
               </TableCell>
@@ -80,9 +88,9 @@ export const MySubmissionsTable = ({
                 </Badge>
               </TableCell>
               <TableCell>
-                {submission.attachments && submission.attachments.length > 0 ? (
+                {evidenceUrl ? (
                   <a
-                    href={submission.attachments[0]}
+                    href={evidenceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#3DCF8E] hover:underline"
@@ -104,8 +112,9 @@ export const MySubmissionsTable = ({
                   </Button>
                 )}
               </TableCell>
-            </TableRow>
-          ))}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
