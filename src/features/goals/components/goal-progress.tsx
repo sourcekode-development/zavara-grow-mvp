@@ -9,25 +9,26 @@ interface GoalProgressProps {
 }
 
 export const GoalProgress = ({ goal }: GoalProgressProps) => {
+  const totalEffort = Number(goal.effort ?? 0);
+  const completedEffort = Number(goal.completed_effort ?? 0);
+  const remainingEffort = Math.max(Number((totalEffort - completedEffort).toFixed(2)), 0);
   const progressPercentage =
-    goal.total_sessions > 0
-      ? Math.round((goal.completed_sessions / goal.total_sessions) * 100)
-      : 0;
+    totalEffort > 0 ? Math.round((completedEffort / totalEffort) * 100) : 0;
 
   const stats = [
     {
-      label: 'Total Sessions',
-      value: goal.total_sessions,
+      label: 'Total Effort',
+      value: totalEffort,
       icon: Target,
     },
     {
       label: 'Completed',
-      value: goal.completed_sessions,
+      value: completedEffort,
       icon: TrendingUp,
     },
     {
       label: 'Remaining',
-      value: goal.total_sessions - goal.completed_sessions,
+      value: remainingEffort,
       icon: Calendar,
     },
   ];
@@ -68,7 +69,6 @@ export const GoalProgress = ({ goal }: GoalProgressProps) => {
           })}
         </div>
 
-        {/* Streak */}
         {goal.current_streak > 0 && (
           <div className="pt-4 border-t">
             <div className="flex items-center justify-between">

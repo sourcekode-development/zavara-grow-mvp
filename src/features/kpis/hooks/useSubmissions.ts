@@ -55,7 +55,10 @@ export const useSubmitClaim = () => {
   const { user } = useAuthStore();
 
   const submitClaim = useCallback(
-    async (request: Omit<CreateSubmissionRequest, 'developer_id'>) => {
+    async (
+      request: Omit<CreateSubmissionRequest, 'developer_id'>,
+      screenshotFiles: File[] = []
+    ) => {
       if (!user?.profile?.id) {
         return { data: null, error: 'User not authenticated' };
       }
@@ -65,7 +68,7 @@ export const useSubmitClaim = () => {
         developer_id: user.profile.id,
       };
 
-      const result = await submissionsApi.submitClaim(fullRequest);
+      const result = await submissionsApi.submitClaim(fullRequest, screenshotFiles);
 
       if (result.data) {
         // Note: addSubmission expects full details, but we get basic submission

@@ -18,7 +18,6 @@ interface CheckpointFormDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (data: CreateCheckpointRequest) => Promise<void>;
   goalId: string;
-  milestones: Array<{ id: string; title: string }>;
   checkpoint?: Checkpoint | null;
   isLoading?: boolean;
 }
@@ -34,21 +33,19 @@ export const CheckpointFormDialog = ({
   onOpenChange,
   onSave,
   goalId,
-  milestones = [],
   checkpoint,
   isLoading = false,
 }: CheckpointFormDialogProps) => {
   const { user } = useAuthStore();
   const [reviewers, setReviewers] = useState<Reviewer[]>([]);
   const [loadingReviewers, setLoadingReviewers] = useState(false);
-  
+
   const [formData, setFormData] = useState<Partial<CreateCheckpointRequest>>({
     goal_id: goalId,
     title: '',
     description: '',
     type: 'MANUAL_REVIEW',
     trigger_type: 'MANUAL',
-    milestone_id: undefined,
     trigger_config: undefined,
     scheduled_date: undefined,
     assigned_reviewer_id: undefined,
@@ -57,25 +54,23 @@ export const CheckpointFormDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [afterDays, setAfterDays] = useState<string>('');
 
-  // Load reviewers
   useEffect(() => {
     const loadReviewers = async () => {
       if (!user?.profile?.company_id || !open) return;
-      
+
       setLoadingReviewers(true);
       try {
-        const response = await fetchUsers(user.profile.company_id, {
-          role: 'TEAM_LEAD', // Filter by TEAM_LEAD first
+        const leadsResponse = await fetchUsers(user.profile.company_id, {
+          role: 'TEAM_LEAD',
         });
-        
-        if (response.success && response.data) {
-          // Get both TEAM_LEAD and COMPANY_ADMIN users
+
+        if (leadsResponse.success && leadsResponse.data) {
           const adminResponse = await fetchUsers(user.profile.company_id, {
             role: 'COMPANY_ADMIN',
           });
-          
+
           const allReviewers = [
-            ...response.data.users,
+            ...leadsResponse.data.users,
             ...(adminResponse.success && adminResponse.data ? adminResponse.data.users : []),
           ];
           setReviewers(allReviewers);
@@ -90,7 +85,6 @@ export const CheckpointFormDialog = ({
     loadReviewers();
   }, [user?.profile?.company_id, open]);
 
-  // Initialize form when checkpoint provided (edit mode)
   useEffect(() => {
     if (checkpoint) {
       setFormData({
@@ -99,7 +93,6 @@ export const CheckpointFormDialog = ({
         description: checkpoint.description || '',
         type: checkpoint.type,
         trigger_type: checkpoint.trigger_type || 'MANUAL',
-        milestone_id: checkpoint.milestone_id || undefined,
         trigger_config: checkpoint.trigger_config || undefined,
         scheduled_date: checkpoint.scheduled_date || undefined,
         assigned_reviewer_id: checkpoint.assigned_reviewer_id || undefined,
@@ -113,14 +106,12 @@ export const CheckpointFormDialog = ({
         setAfterDays(checkpoint.trigger_config.after_days.toString());
       }
     } else {
-      // Reset for new checkpoint
       setFormData({
         goal_id: goalId,
         title: '',
         description: '',
         type: 'MANUAL_REVIEW',
         trigger_type: 'MANUAL',
-        milestone_id: undefined,
         trigger_config: undefined,
         scheduled_date: undefined,
         assigned_reviewer_id: undefined,
@@ -143,15 +134,15 @@ export const CheckpointFormDialog = ({
       ...formData,
       trigger_type: value,
       trigger_config: undefined,
-      milestone_id: undefined,
     });
     setAfterDays('');
   };
 
   const handleAfterDaysChange = (value: string) => {
     setAfterDays(value);
-    const days = parseInt(value);
-    if (!isNaN(days) && days > 0) {
+    const days = parseInt(value, 10);
+
+    if (!Number.isNaN(days) && days > 0) {
       setFormData({
         ...formData,
         trigger_config: {
@@ -159,29 +150,20 @@ export const CheckpointFormDialog = ({
           from_start: true,
         },
       });
-    } else {
-      setFormData({
-        ...formData,
-        trigger_config: undefined,
-      });
+      return;
     }
+
+    setFormData({
+      ...formData,
+      trigger_config: undefined,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.title?.trim()) {
-      return;
-    }
 
-    // Validation
-    if (formData.trigger_type === 'AFTER_DAYS' && !formData.trigger_config?.after_days) {
-      return;
-    }
-
-    if (formData.trigger_type === 'AFTER_MILESTONE' && !formData.milestone_id) {
-      return;
-    }
+    if (!formData.title?.trim()) return;
+    if (formData.trigger_type === 'AFTER_DAYS' && !formData.trigger_config?.after_days) return;
 
     const requestData: CreateCheckpointRequest = {
       goal_id: goalId,
@@ -190,7 +172,6 @@ export const CheckpointFormDialog = ({
       type: formData.type as CheckpointType,
       trigger_type: formData.trigger_type,
       trigger_config: formData.trigger_config || undefined,
-      milestone_id: formData.milestone_id,
       scheduled_date: formData.scheduled_date,
       assigned_reviewer_id: formData.assigned_reviewer_id,
     };
@@ -202,7 +183,6 @@ export const CheckpointFormDialog = ({
   const isFormValid = () => {
     if (!formData.title?.trim()) return false;
     if (formData.trigger_type === 'AFTER_DAYS' && !formData.trigger_config?.after_days) return false;
-    if (formData.trigger_type === 'AFTER_MILESTONE' && !formData.milestone_id) return false;
     return true;
   };
 
@@ -214,7 +194,6 @@ export const CheckpointFormDialog = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="title">
               Checkpoint Title <span className="text-red-500">*</span>
@@ -228,7 +207,6 @@ export const CheckpointFormDialog = ({
             />
           </div>
 
-          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
             <Textarea
@@ -241,7 +219,6 @@ export const CheckpointFormDialog = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Checkpoint Type */}
             <div className="space-y-2">
               <Label htmlFor="type">Checkpoint Type</Label>
               <Select
@@ -258,7 +235,6 @@ export const CheckpointFormDialog = ({
               </Select>
             </div>
 
-            {/* Trigger Type */}
             <div className="space-y-2">
               <Label htmlFor="trigger">Trigger</Label>
               <Select
@@ -271,13 +247,11 @@ export const CheckpointFormDialog = ({
                 <SelectContent>
                   <SelectItem value="MANUAL">Manual</SelectItem>
                   <SelectItem value="AFTER_DAYS">After Days</SelectItem>
-                  <SelectItem value="AFTER_MILESTONE">After Milestone</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Conditional Fields Based on Trigger Type */}
           {formData.trigger_type === 'AFTER_DAYS' && (
             <div className="space-y-2">
               <Label htmlFor="afterDays">
@@ -299,54 +273,12 @@ export const CheckpointFormDialog = ({
             </div>
           )}
 
-          {formData.trigger_type === 'AFTER_MILESTONE' && milestones.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="milestone">
-                Select Milestone <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.milestone_id || 'none'}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, milestone_id: value === 'none' ? undefined : value })
-                }
-              >
-                <SelectTrigger id="milestone">
-                  <SelectValue placeholder="Choose a milestone" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Select Milestone</SelectItem>
-                  {milestones.map((milestone) => (
-                    <SelectItem key={milestone.id} value={milestone.id}>
-                      {milestone.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground flex items-start gap-1">
-                <Info className="h-3 w-3 mt-0.5 shrink-0" />
-                Checkpoint will be triggered when this milestone is completed
-              </p>
-            </div>
-          )}
-
-          {formData.trigger_type === 'AFTER_MILESTONE' && milestones.length === 0 && (
-            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                No milestones available. Please add milestones to the goal first.
-              </p>
-            </div>
-          )}
-
           <div className="grid grid-cols-2 gap-4">
-            {/* Scheduled Date */}
             <div className="space-y-2">
               <Label>Scheduled Date (Optional)</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {selectedDate ? format(selectedDate, 'MMM dd, yyyy') : 'Pick a date'}
                   </Button>
@@ -357,7 +289,6 @@ export const CheckpointFormDialog = ({
               </Popover>
             </div>
 
-            {/* Assign Reviewer */}
             <div className="space-y-2">
               <Label htmlFor="reviewer">Assign Reviewer (Optional)</Label>
               <Select
@@ -382,17 +313,16 @@ export const CheckpointFormDialog = ({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button
               type="submit"
+              disabled={!isFormValid() || isLoading}
               className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90"
-              disabled={isLoading || !isFormValid()}
             >
-              {checkpoint ? 'Update Checkpoint' : 'Add Checkpoint'}
+              {isLoading ? 'Saving...' : checkpoint ? 'Update Checkpoint' : 'Add Checkpoint'}
             </Button>
           </div>
         </form>

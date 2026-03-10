@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, Calendar, Clock, Pencil, Trash2, Target, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { CheckpointFormDialog } from './checkpoint-form-dialog';
@@ -11,23 +12,27 @@ import type { Checkpoint, CheckpointStatus, CreateCheckpointRequest } from '../t
 interface CheckpointsEditorProps {
   checkpoints: Checkpoint[];
   goalId: string;
-  milestones?: Array<{ id: string; title: string }>;
   onAddCheckpoint: (data: CreateCheckpointRequest) => Promise<void>;
   onUpdateCheckpoint?: (checkpointId: string, data: CreateCheckpointRequest) => Promise<void>;
   onDeleteCheckpoint: (checkpointId: string) => Promise<void>;
   isLoading?: boolean;
   canEdit?: boolean;
+  canCreate?: boolean;
+  hideCreateActions?: boolean;
+  createBlockedReason?: string;
 }
 
 export const CheckpointsEditor = ({
   checkpoints,
   goalId,
-  milestones = [],
   onAddCheckpoint,
   onUpdateCheckpoint,
   onDeleteCheckpoint,
   isLoading = false,
   canEdit = true,
+  canCreate = true,
+  hideCreateActions = false,
+  createBlockedReason = 'Sessions and checkpoints can only be created for approved goals.',
 }: CheckpointsEditorProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCheckpoint, setEditingCheckpoint] = useState<Checkpoint | null>(null);
@@ -87,10 +92,6 @@ export const CheckpointsEditor = ({
     if (checkpoint.trigger_type === 'AFTER_DAYS' && checkpoint.trigger_config?.after_days) {
       return `After ${checkpoint.trigger_config.after_days} days from start`;
     }
-    if (checkpoint.trigger_type === 'AFTER_MILESTONE' && checkpoint.milestone_id) {
-      const milestone = milestones.find((m) => m.id === checkpoint.milestone_id);
-      return milestone ? `After milestone: ${milestone.title}` : 'After milestone completion';
-    }
     return 'Manual trigger';
   };
 
@@ -121,7 +122,11 @@ export const CheckpointsEditor = ({
             {checkpoints.length} checkpoint{checkpoints.length !== 1 ? 's' : ''} configured
           </p>
         </div>
-        {canEdit && (
+        {hideCreateActions ? (
+          <div className="text-sm font-medium text-red-600 dark:text-red-400">
+            Status: Not Accepted
+          </div>
+        ) : canEdit && canCreate ? (
           <Button
             onClick={handleAddClick}
             disabled={isLoading}
@@ -131,7 +136,19 @@ export const CheckpointsEditor = ({
             <Plus className="h-4 w-4 mr-2" />
             Add Checkpoint
           </Button>
-        )}
+        ) : canEdit ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button disabled className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Checkpoint
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{createBlockedReason}</TooltipContent>
+          </Tooltip>
+        ) : null}
       </div>
 
       {checkpoints.length === 0 ? (
@@ -139,14 +156,30 @@ export const CheckpointsEditor = ({
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Target className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-sm text-muted-foreground text-center mb-4">
-              No checkpoints configured yet. Add checkpoints to track and validate progress at key milestones.
+              No checkpoints configured yet. Add checkpoints to validate progress.
             </p>
-            {canEdit && (
+            {hideCreateActions ? (
+              <div className="text-sm font-medium text-red-600 dark:text-red-400">
+                Status: Not Accepted
+              </div>
+            ) : canEdit && canCreate ? (
               <Button onClick={handleAddClick} className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90" size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Add First Checkpoint
               </Button>
-            )}
+            ) : canEdit ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button disabled className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Checkpoint
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{createBlockedReason}</TooltipContent>
+              </Tooltip>
+            ) : null}
           </CardContent>
         </Card>
       ) : (
@@ -238,7 +271,6 @@ export const CheckpointsEditor = ({
         onSave={handleSaveCheckpoint}
         checkpoint={editingCheckpoint}
         goalId={goalId}
-        milestones={milestones}
         isLoading={isLoading}
       />
 

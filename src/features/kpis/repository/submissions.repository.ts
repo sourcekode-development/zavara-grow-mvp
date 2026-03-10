@@ -83,7 +83,7 @@ export const submissionsRepository = {
         `
         )
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       return { data, error };
     } catch (error) {
@@ -105,6 +105,7 @@ export const submissionsRepository = {
           developer_id: submission.developer_id,
           description: submission.description,
           attachments: submission.attachments || [],
+          screenshot_paths: submission.screenshot_paths || [],
           status: 'PENDING',
         })
         .select()
@@ -127,6 +128,8 @@ export const submissionsRepository = {
       reviewer_comments?: string;
       reviewed_at?: string;
       points_awarded?: number;
+      attachments?: string[];
+      screenshot_paths?: string[];
     }
   ): Promise<{ data: KpiMetricSubmission | null; error: any }> {
     try {
@@ -135,7 +138,7 @@ export const submissionsRepository = {
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       return { data, error };
     } catch (error) {

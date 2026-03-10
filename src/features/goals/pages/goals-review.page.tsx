@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useGoals } from '../hooks/useGoals';
 import { useGoalActions } from '../hooks/useGoalActions';
 import { GoalReviewDialog } from '../components/goal-review-dialog';
-import { FileText, Calendar, User, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Calendar, User, CheckCircle, AlertTriangle, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { toast } from 'sonner';
 import type { Goal, GoalReviewAction } from '../types';
@@ -68,8 +68,11 @@ export const GoalsReviewPage = () => {
     }
   };
 
-  const handleViewGoal = (goalId: string) => {
-    navigate(`/goals/${goalId}`);
+  const handleViewGoal = (goal: Goal) => {
+    if (goal?.status === 'ABANDONED') {
+      return;
+    }
+    navigate(`/goals/${goal.id}`);
   };
 
   if (isLoading) {
@@ -167,61 +170,44 @@ export const GoalsReviewPage = () => {
                       Submitted {formatDistanceToNow(new Date(goal.created_at), { addSuffix: true })}
                     </span>
                   </div>
-                  {goal.milestones && goal.milestones.length > 0 && (
+                  {goal.effort && (
                     <div className="flex items-center gap-1.5">
-                      <FileText className="h-4 w-4" />
-                      <span>{goal.milestones.length} milestone{goal.milestones.length !== 1 ? 's' : ''}</span>
+                      <Sparkles className="h-4 w-4" />
+                      <span>{goal.effort} effort target</span>
                     </div>
                   )}
                 </div>
-
-                {/* Milestones Preview */}
-                {goal.milestones && goal.milestones.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <div className="text-sm font-medium">Milestones:</div>
-                    <div className="space-y-1.5">
-                      {goal.milestones.slice(0, 3).map((milestone) => (
-                        <div
-                          key={milestone.id}
-                          className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-2 rounded"
-                        >
-                          <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                          <span className="flex-1">{milestone.title}</span>
-                          {milestone.duration_days && (
-                            <span className="text-xs text-muted-foreground">
-                              {milestone.duration_days}d
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                      {goal.milestones.length > 3 && (
-                        <div className="text-xs text-muted-foreground pl-5">
-                          +{goal.milestones.length - 3} more
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                {goal.effort_description && (
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    {goal.effort_description}
+                  </p>
                 )}
               </CardHeader>
 
               <CardContent className="pt-0">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewGoal(goal.id)}
-                  >
-                    View Details
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => handleReviewClick(goal)}
-                    disabled={actionLoading}
-                    className="bg-[#3DCF8E] hover:bg-[#34B67A] text-white"
-                  >
-                    Review Goal
-                  </Button>
-                </div>
+                {goal.status === 'ABANDONED' ? (
+                  <div className="text-sm font-medium text-red-600 dark:text-red-400">
+                    Status: Not Accepted
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewGoal(goal)}
+                    >
+                      View Details
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleReviewClick(goal)}
+                      disabled={actionLoading}
+                      className="bg-[#3DCF8E] hover:bg-[#34B67A] text-white"
+                    >
+                      Review Goal
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

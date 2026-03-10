@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,15 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useGoal, useGoalMutations } from '../hooks/useGoals';
-import { MilestoneEditor } from '../components/milestone-editor';
-import { FrequencyConfigForm } from '../components/frequency-config-form';
-import { SessionsEditor } from '../components/sessions-editor';
 import { useSessionMutations } from '../hooks/useSessions';
 import { useCheckpoints } from '../hooks/useCheckpoints';
 import { CheckpointsEditor } from '../components/checkpoints-editor';
+import { SessionsEditor } from '../components/sessions-editor';
 import { toast } from 'sonner';
-import type { Milestone, FrequencyType, FrequencyConfig, CadenceSession, CreateSessionRequest, CreateCheckpointRequest } from '../types';
-import * as milestonesApi from '../apis/milestones.api';
+import type { CadenceSession, CreateCheckpointRequest, CreateSessionRequest } from '../types';
 
 export const GoalEditPage = () => {
   const navigate = useNavigate();
@@ -25,124 +22,73 @@ export const GoalEditPage = () => {
   const [searchParams] = useSearchParams();
   const { goal, isLoading: goalLoading, refetch: refetchGoal } = useGoal(id || '');
   const { updateGoal, isLoading: updateLoading } = useGoalMutations();
-  const { createSession, updateSession, deleteSession, isLoading: sessionLoading } = useSessionMutations();
+  const { createSession, updateSession, deleteSession, isLoading: sessionLoading, error: sessionError } = useSessionMutations();
   const { createCheckpoint, deleteCheckpoint, isLoading: checkpointLoading } = useCheckpoints();
 
   const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || 'basics');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    milestones: [] as Partial<Milestone>[],
-    frequencyType: null as FrequencyType | null,
-    frequencyConfig: null as FrequencyConfig | null,
+    effort: '',
+    effort_description: '',
   });
-  const [originalMilestones, setOriginalMilestones] = useState<Partial<Milestone>[]>([]);
 
-  // Load goal data when it's available
   useEffect(() => {
-    if (goal) {
-      const milestones = goal.milestones || [];
-      setFormData({
-        title: goal.title,
-        description: goal.description || '',
-        milestones: milestones,
-        frequencyType: goal.frequency_type,
-        frequencyConfig: goal.frequency_config,
-      });
-      setOriginalMilestones(milestones); // Store original for comparison
-    }
+    if (!goal) return;
+
+    setFormData({
+      title: goal.title,
+      description: goal.description || '',
+      effort: goal.effort?.toString() || '',
+      effort_description: goal.effort_description || '',
+    });
   }, [goal]);
 
   const handleSave = async () => {
-    if (!id || !formData.title) {
+    if (!id || !formData.title.trim()) {
       toast.error('Please enter a goal title');
-      console.log('💾 Updating goal with milestones:', {
-        goalId: id,
-        milestonesCount: formData.milestones.length,
-        originalCount: originalMilestones.length,
-      });
       return;
-  }
+    }
+
+    const parsedEffort = Number(formData.effort);
+    if (!Number.isFinite(parsedEffort) || parsedEffort <= 0) {
+      toast.error('Please enter a valid total effort value');
+      return;
+    }
 
     try {
-      // Step 1: Update goal basic info
       await updateGoal(id, {
-        title: formData.title,
-        description: formData.description || undefined,
-        frequency_type: formData.frequencyType,
-        frequency_config: formData.frequencyConfig,
+        title: formData.title.trim(),
+        description: formData.description.trim() || undefined,
+        effort: parsedEffort,
+        effort_description: formData.effort_description.trim() || undefined,
       });
 
-      console.log('✅ Goal basic info updated');
-
-      // Step 2: Handle milestone changes
-      const currentMilestoneIds = formData.milestones
-        .filter(m => m.id)
-        .map(m => m.id) as string[];
-      const originalMilestoneIds = originalMilestones
-        .filter(m => m.id)
-        .map(m => m.id) as string[];
-
-      // Delete removed milestones
-      const deletedIds = originalMilestoneIds.filter(id => !currentMilestoneIds.includes(id));
-      if (deletedIds.length > 0) {
-        console.log('🗑️  Deleting', deletedIds.length, 'milestones');
-        await Promise.all(
-          deletedIds.map(milestoneId => 
-            milestonesApi.deleteMilestone(milestoneId).catch(err => {
-              console.warn(`Failed to delete milestone ${milestoneId}:`, err.message);
-              // Continue even if delete fails (might have sessions)
-            })
-          )
-        );
-      }
-
-      // Update existing milestones
-      const updatePromises = formData.milestones
-        .filter(m => m.id && m.title)
-        .map(milestone => 
-          milestonesApi.updateMilestone(milestone.id!, {
-            title: milestone.title!,
-            description: milestone.description || undefined,
-            order_index: milestone.order_index || 1,
-            duration_days: milestone.duration_days || undefined,
-          })
-        );
-
-      if (updatePromises.length > 0) {
-        console.log('📝 Updating', updatePromises.length, 'existing milestones');
-        await Promise.all(updatePromises);
-      }
-
-      // Create new milestones
-      const newMilestones = formData.milestones.filter(m => !m.id && m.title);
-      if (newMilestones.length > 0) {
-        console.log('➕ Creating', newMilestones.length, 'new milestones');
-        const createPromises = newMilestones.map((milestone, index) =>
-          milestonesApi.createMilestone({
-            goal_id: id,
-            title: milestone.title!,
-            description: milestone.description || undefined,
-            order_index: milestone.order_index || (formData.milestones.length + index + 1),
-            duration_days: milestone.duration_days || undefined,
-          })
-        );
-        await Promise.all(createPromises);
-      }
-
-      console.log('✅ All milestone changes saved');
-      toast.success('Goal updated successfully with milestones');
+      toast.success('Goal updated successfully');
       navigate(`/goals/${id}`);
     } catch (error) {
-      console.error('❌ Error updating goal:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update goal');
     }
-    toast.success('Goal updated successfully');
-    navigate(`/goals/${id}`);
   };
 
-  const handleAddSession = async (sessionData: Partial<CadenceSession>) => {
+  const handleAddCheckpoint = async (data: CreateCheckpointRequest) => {
     if (!id) return;
+    await createCheckpoint(data);
+    await refetchGoal();
+  };
+
+  const handleUpdateCheckpoint = async () => {
+    toast.info('Checkpoint editing will be available soon');
+  };
+
+  const handleDeleteCheckpoint = async (checkpointId: string) => {
+    await deleteCheckpoint(checkpointId);
+    await refetchGoal();
+  };
+
+  const handleAddSession = async (sessionData: Partial<CadenceSession>): Promise<boolean> => {
+    if (!id) return false;
+
     const requestData: CreateSessionRequest = {
       goal_id: id,
       milestone_id: sessionData.milestone_id || undefined,
@@ -150,43 +96,45 @@ export const GoalEditPage = () => {
       description: sessionData.description || undefined,
       scheduled_date: sessionData.scheduled_date || undefined,
       duration_minutes: sessionData.duration_minutes,
+      session_effort: sessionData.session_effort || 1,
+      completed_effort: sessionData.completed_effort ?? 0,
     };
+
     const session = await createSession(requestData);
     if (session) {
       toast.success('Session added successfully');
+      await refetchGoal();
+      return true;
     }
+    toast.warning(
+      sessionError || 'Total session effort cannot exceed goal effort. Please reduce session values.'
+    );
+    return false;
   };
 
-  const handleUpdateSession = async (sessionId: string, sessionData: Partial<CadenceSession>) => {
-    await updateSession(sessionId, {
+  const handleUpdateSession = async (
+    sessionId: string,
+    sessionData: Partial<CadenceSession>
+  ): Promise<boolean> => {
+    const success = await updateSession(sessionId, {
       ...sessionData,
       milestone_id: sessionData.milestone_id || undefined,
     });
-    toast.success('Session updated successfully');
+    if (success) {
+      toast.success('Session updated successfully');
+      await refetchGoal();
+      return true;
+    }
+    toast.warning(
+      sessionError || 'Total session effort cannot exceed goal effort. Please reduce session values.'
+    );
+    return false;
   };
 
   const handleDeleteSession = async (sessionId: string) => {
     await deleteSession(sessionId);
     toast.success('Session deleted successfully');
-  };
-
-  const handleAddCheckpoint = async (data: CreateCheckpointRequest) => {
-    if (!id) return;
-    await createCheckpoint(data);
-    // Refetch goal to show the new checkpoint
-    refetchGoal();
-  };
-
-  const handleUpdateCheckpoint = async () => {
-    // For now, delete and recreate since we don't have an update method in the API
-    // In production, you'd want a proper update endpoint
-    toast.info('Checkpoint updates will be available soon');
-  };
-
-  const handleDeleteCheckpoint = async (checkpointId: string) => {
-    await deleteCheckpoint(checkpointId);
-    // Refetch goal to update the checkpoints list
-    refetchGoal();
+    await refetchGoal();
   };
 
   if (goalLoading) {
@@ -219,11 +167,15 @@ export const GoalEditPage = () => {
     );
   }
 
-  const isLoading = updateLoading || sessionLoading;
+  const isRejectedGoal = goal.status === 'ABANDONED';
+  const requiresChanges = goal.status === 'CHANGES_REQUESTED';
+  const canCreateExecutionItems = goal.status === 'APPROVED';
+  const createBlockedReason = requiresChanges
+    ? 'This goal requires modifications before you can create sessions or checkpoints.'
+    : 'Sessions and checkpoints can only be created for approved goals.';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={() => navigate(`/goals/${id}`)}>
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -231,127 +183,100 @@ export const GoalEditPage = () => {
         </Button>
         <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">Edit Goal</h1>
-          <p className="text-muted-foreground mt-1">
-            Update goal details, milestones, frequency, and sessions
-          </p>
+          <p className="text-muted-foreground mt-1">Update goal details and checkpoints</p>
         </div>
         <Button
           onClick={handleSave}
-          disabled={!formData.title || isLoading}
+          disabled={!formData.title.trim() || !formData.effort || updateLoading}
           className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90"
         >
           <Save className="h-4 w-4 mr-2" />
-          {isLoading ? 'Saving...' : 'Save Changes'}
+          {updateLoading ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
 
-      {/* Multi-Tab Form */}
       <Card>
         <CardContent className="p-6">
           <Tabs value={currentTab} onValueChange={setCurrentTab}>
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="basics">Basics</TabsTrigger>
-              <TabsTrigger value="milestones">Milestones</TabsTrigger>
-              <TabsTrigger value="frequency">Frequency</TabsTrigger>
               <TabsTrigger value="sessions">Sessions</TabsTrigger>
               <TabsTrigger value="checkpoints">Checkpoints</TabsTrigger>
             </TabsList>
 
-            {/* Tab 1: Basics */}
             <TabsContent value="basics" className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">
-                    Goal Title <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="title"
-                    placeholder="e.g., AWS Solutions Architect Certification"
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="title">Goal Title <span className="text-red-500">*</span></Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (Optional)</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe what you want to achieve and why..."
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    rows={4}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Textarea
+                  id="description"
+                  rows={4}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="effort">Total Effort Required <span className="text-red-500">*</span></Label>
+                <Input
+                  id="effort"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={formData.effort}
+                  onChange={(e) => setFormData({ ...formData, effort: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="effortDescription">Effort Description (Optional)</Label>
+                <Textarea
+                  id="effortDescription"
+                  rows={3}
+                  value={formData.effort_description}
+                  onChange={(e) => setFormData({ ...formData, effort_description: e.target.value })}
+                />
               </div>
             </TabsContent>
 
-            {/* Tab 2: Milestones */}
-            <TabsContent value="milestones" className="space-y-6">
-              <MilestoneEditor
-                milestones={formData.milestones}
-                onChange={(milestones) =>
-                  setFormData({ ...formData, milestones })
-                }
-              />
-            </TabsContent>
-
-            {/* Tab 3: Frequency */}
-            <TabsContent value="frequency" className="space-y-6">
-              <FrequencyConfigForm
-                frequencyType={formData.frequencyType}
-                frequencyConfig={formData.frequencyConfig}
-                onChange={(type, config) =>
-                  setFormData({
-                    ...formData,
-                    frequencyType: type,
-                    frequencyConfig: config,
-                  })
-                }
-              />
-            </TabsContent>
-
-            {/* Tab 4: Sessions */}
             <TabsContent value="sessions" className="space-y-6">
               <SessionsEditor
                 sessions={goal.active_sessions || []}
                 goalId={id!}
-                milestones={goal.milestones?.map((m) => ({ id: m.id, title: m.title }))}
+                milestones={[]}
                 onAddSession={handleAddSession}
                 onUpdateSession={handleUpdateSession}
                 onDeleteSession={handleDeleteSession}
                 isLoading={sessionLoading}
+                canCreate={canCreateExecutionItems}
+                hideCreateActions={isRejectedGoal}
+                createBlockedReason={createBlockedReason}
               />
             </TabsContent>
 
-            {/* Tab 5: Checkpoints */}
             <TabsContent value="checkpoints" className="space-y-6">
               <CheckpointsEditor
                 checkpoints={goal.checkpoints || []}
                 goalId={id!}
-                milestones={goal.milestones?.map((m) => ({ id: m.id, title: m.title }))}
                 onAddCheckpoint={handleAddCheckpoint}
                 onUpdateCheckpoint={handleUpdateCheckpoint}
                 onDeleteCheckpoint={handleDeleteCheckpoint}
                 isLoading={checkpointLoading}
-                canEdit={true}
+                canEdit
+                canCreate={canCreateExecutionItems}
+                hideCreateActions={isRejectedGoal}
+                createBlockedReason={createBlockedReason}
               />
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* Help Text */}
-      <Card className="bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900">
-        <CardContent className="p-4">
-          <p className="text-sm text-blue-600 dark:text-blue-400">
-            💡 <strong>Tip:</strong> Changes are saved when you click "Save Changes". 
-            You can switch between tabs to update different aspects of your goal.
-          </p>
         </CardContent>
       </Card>
     </div>

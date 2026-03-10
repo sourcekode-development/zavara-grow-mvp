@@ -14,7 +14,6 @@ import type {
  * Hook to fetch and manage KPI templates
  */
 export const useTemplates = () => {
-  const { user } = useAuthStore();
   const { templates, isLoading, filters, setTemplates, setFilters, setLoading } =
     useTemplatesStore();
 

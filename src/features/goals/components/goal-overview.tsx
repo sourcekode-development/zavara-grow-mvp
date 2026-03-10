@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { GoalWithDetails, FrequencyType } from '../types';
-import { Calendar, Clock, Repeat } from 'lucide-react';
+import { Calendar, Clock, Sparkles, Repeat } from 'lucide-react';
 
 interface GoalOverviewProps {
   goal: GoalWithDetails;
@@ -38,20 +38,30 @@ export const GoalOverview = ({ goal }: GoalOverviewProps) => {
           </div>
         )}
 
-        {/* Frequency */}
+        {/* Effort */}
+        {goal.effort && (
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium">Effort Target</h4>
+              <p className="text-sm text-muted-foreground">
+                {goal.effort} effort required
+              </p>
+              {goal.effort_description && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {goal.effort_description}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {goal.frequency_type && (
           <div className="flex items-start gap-3">
             <Repeat className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div className="flex-1">
               <h4 className="text-sm font-medium">Frequency</h4>
-              <p className="text-sm text-muted-foreground">
-                {frequencyLabels[goal.frequency_type]}
-              </p>
-              {goal.frequency_config?.duration_minutes && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {goal.frequency_config.duration_minutes} minutes per session
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground">{frequencyLabels[goal.frequency_type]}</p>
             </div>
           </div>
         )}

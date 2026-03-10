@@ -1,4 +1,8 @@
 import {
+  useEffect,
+  useState,
+} from 'react';
+import {
   Table,
   TableBody,
   TableCell,
@@ -9,6 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, ExternalLink } from 'lucide-react';
+import { claimsStorageApi } from '../apis/claims-storage.api';
 import type { KpiMetricSubmissionWithDetails } from '../types';
 
 interface MySubmissionsTableProps {
@@ -33,6 +38,37 @@ export const MySubmissionsTable = ({
   submissions,
   onViewSubmission,
 }: MySubmissionsTableProps) => {
+  const [signedScreenshotUrls, setSignedScreenshotUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSignedUrls = async () => {
+      const entries = await Promise.all(
+        submissions.map(async (submission): Promise<[string, string]> => {
+          const path = submission.screenshot_paths?.[0];
+          if (!path) {
+            return [submission.id, ''];
+          }
+
+          const signedUrl = await claimsStorageApi.getSignedScreenshotUrl(path);
+          return [submission.id, signedUrl || ''];
+        })
+      );
+
+      if (isMounted) {
+        setSignedScreenshotUrls(
+          Object.fromEntries(entries.filter(([, url]) => Boolean(url)))
+        );
+      }
+    };
+
+    void loadSignedUrls();
+    return () => {
+      isMounted = false;
+    };
+  }, [submissions]);
+
   if (submissions.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -56,8 +92,12 @@ export const MySubmissionsTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {submissions.map((submission) => (
-            <TableRow key={submission.id}>
+          {submissions.map((submission) => {
+            const screenshotUrl = signedScreenshotUrls[submission.id] || null;
+            const evidenceUrl = screenshotUrl || submission.attachments?.[0] || null;
+
+            return (
+              <TableRow key={submission.id}>
               <TableCell className="font-medium">
                 {submission.metric?.name || 'N/A'}
               </TableCell>
@@ -80,9 +120,9 @@ export const MySubmissionsTable = ({
                 </Badge>
               </TableCell>
               <TableCell>
-                {submission.attachments && submission.attachments.length > 0 ? (
+                {evidenceUrl ? (
                   <a
-                    href={submission.attachments[0]}
+                    href={evidenceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#3DCF8E] hover:underline"
@@ -104,8 +144,9 @@ export const MySubmissionsTable = ({
                   </Button>
                 )}
               </TableCell>
-            </TableRow>
-          ))}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

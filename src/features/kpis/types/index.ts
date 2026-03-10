@@ -98,6 +98,7 @@ export interface KpiMetricSubmission {
   developer_id: string;
   description: string;
   attachments?: string[] | null;
+  screenshot_paths?: string[] | null;
   status: KpiSubmissionStatus;
   points_awarded?: number;
   reviewer_id?: string;
@@ -221,6 +222,7 @@ export interface CreateSubmissionRequest {
   developer_id: string;
   description: string;
   attachments?: string[];
+  screenshot_paths?: string[];
 }
 
 export interface ReviewSubmissionRequest {

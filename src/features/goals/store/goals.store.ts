@@ -19,7 +19,15 @@ interface GoalsState {
   // Actions
   fetchGoals: (filters?: GoalsQueryFilters) => Promise<void>;
   fetchGoalById: (goalId: string) => Promise<void>;
-  createGoal: (userId: string, data: { title: string; description?: string }) => Promise<Goal | null>;
+  createGoal: (
+    userId: string,
+    data: {
+      title: string;
+      description?: string;
+      effort?: number;
+      effort_description?: string;
+    }
+  ) => Promise<Goal | null>;
   updateGoal: (goalId: string, data: Partial<Goal>) => Promise<void>;
   deleteGoal: (goalId: string) => Promise<void>;
   fetchCheckpoints: (filters?: { status?: string }) => Promise<void>;

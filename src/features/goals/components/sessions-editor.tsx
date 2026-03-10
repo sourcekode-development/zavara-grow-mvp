@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Calendar, Clock, Pencil, Trash2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Calendar, Pencil, Trash2, Target } from 'lucide-react';
 import { format } from 'date-fns';
 import { SessionFormDialog } from './session-form-dialog';
 import { ConfirmDialog } from './confirm-dialog';
@@ -12,10 +13,13 @@ interface SessionsEditorProps {
   sessions: CadenceSession[];
   goalId: string;
   milestones?: Array<{ id: string; title: string }>;
-  onAddSession: (sessionData: Partial<CadenceSession>) => Promise<void>;
-  onUpdateSession: (sessionId: string, sessionData: Partial<CadenceSession>) => Promise<void>;
+  onAddSession: (sessionData: Partial<CadenceSession>) => Promise<boolean>;
+  onUpdateSession: (sessionId: string, sessionData: Partial<CadenceSession>) => Promise<boolean>;
   onDeleteSession: (sessionId: string) => Promise<void>;
   isLoading?: boolean;
+  canCreate?: boolean;
+  hideCreateActions?: boolean;
+  createBlockedReason?: string;
 }
 
 export const SessionsEditor = ({
@@ -26,6 +30,9 @@ export const SessionsEditor = ({
   onUpdateSession,
   onDeleteSession,
   isLoading = false,
+  canCreate = true,
+  hideCreateActions = false,
+  createBlockedReason = 'Sessions and checkpoints can only be created for approved goals.',
 }: SessionsEditorProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<CadenceSession | null>(null);
@@ -49,10 +56,9 @@ export const SessionsEditor = ({
 
   const handleSaveSession = async (sessionData: Partial<CadenceSession>) => {
     if (editingSession) {
-      await onUpdateSession(editingSession.id, sessionData);
-    } else {
-      await onAddSession(sessionData);
+      return onUpdateSession(editingSession.id, sessionData);
     }
+    return onAddSession(sessionData);
   };
 
   const handleConfirmDelete = async () => {
@@ -81,20 +87,38 @@ export const SessionsEditor = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Cadence Sessions</h3>
+          {/* <h3 className="text-lg font-semibold">Cadence Sessions</h3> */}
           <p className="text-sm text-muted-foreground">
             {sessions.length} session{sessions.length !== 1 ? 's' : ''} scheduled
           </p>
         </div>
-        <Button
-          onClick={handleAddClick}
-          disabled={isLoading}
-          className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90"
-          size="sm"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Session
-        </Button>
+        {hideCreateActions ? (
+          <div className="text-sm font-medium text-red-600 dark:text-red-400">
+            Status: Not Accepted
+          </div>
+        ) : canCreate ? (
+          <Button
+            onClick={handleAddClick}
+            disabled={isLoading}
+            className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90"
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Session
+          </Button>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button disabled className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Session
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{createBlockedReason}</TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
       {sessions.length === 0 ? (
@@ -104,14 +128,32 @@ export const SessionsEditor = ({
             <p className="text-sm text-muted-foreground text-center mb-4">
               No sessions scheduled yet. Add your first cadence session to get started.
             </p>
-            <Button
-              onClick={handleAddClick}
-              className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add First Session
-            </Button>
+            {hideCreateActions ? (
+              <div className="text-sm font-medium text-red-600 dark:text-red-400">
+                Status: Not Accepted
+              </div>
+            ) : canCreate ? (
+              <Button
+                onClick={handleAddClick}
+                className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Session
+              </Button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button disabled className="bg-[#3DCF8E] hover:bg-[#3DCF8E]/90" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Session
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{createBlockedReason}</TooltipContent>
+              </Tooltip>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -168,8 +210,10 @@ export const SessionsEditor = ({
                       </div>
                     )}
                     <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5" />
-                      <span>{session.duration_minutes} min</span>
+                      <Target className="h-3.5 w-3.5" />
+                      <span>
+                        Planned: {session.session_effort || 1} effort | Completed: {session.completed_effort || 0}
+                      </span>
                     </div>
                   </div>
                   {session.notes && (

@@ -144,9 +144,6 @@ export const CheckpointsListPage = () => {
                         {checkpoint.goal?.title || 'Goal'}
                       </h3>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Milestone: {checkpoint.milestone?.title || 'N/A'}
-                    </p>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                       {checkpoint.reviewer && (
                         <div className="flex items-center gap-1.5">

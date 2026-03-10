@@ -16,7 +16,6 @@ import type {
 } from '../types';
 import * as goalsRepo from '../repository/goals.repository';
 import * as reviewsRepo from '../repository/reviews.repository';
-import * as milestonesRepo from '../repository/milestones.repository';
 import * as checkpointsApi from './checkpoints.api';
 
 /**
@@ -53,6 +52,10 @@ export const getGoalById = async (goalId: string): Promise<GoalWithDetails> => {
  * Create a new goal (always starts as DRAFT)
  */
 export const createGoal = async (userId: string, request: CreateGoalRequest) => {
+  if (request.effort !== undefined && request.effort <= 0) {
+    throw new Error('Effort must be greater than 0');
+  }
+
   const { data, error } = await goalsRepo.createGoal(userId, request);
   
   if (error) {
@@ -79,6 +82,17 @@ export const updateGoal = async (goalId: string, request: UpdateGoalRequest) => 
 
   if (existingGoal.status !== 'DRAFT' && existingGoal.status !== 'CHANGES_REQUESTED') {
     throw new Error('Can only update goals in DRAFT or CHANGES_REQUESTED status');
+  }
+
+  if (request.effort !== undefined && request.effort <= 0) {
+    throw new Error('Effort must be greater than 0');
+  }
+
+  if (
+    request.effort !== undefined &&
+    Number(existingGoal.completed_effort ?? 0) > request.effort
+  ) {
+    throw new Error('Total effort cannot be less than completed effort');
   }
 
   const { data, error } = await goalsRepo.updateGoal(goalId, request);
@@ -114,12 +128,8 @@ export const submitGoalForReview = async (goalId: string, reviewerId: string) =>
     throw new Error('Goal must have a title');
   }
 
-  // Validate has milestones
-  const { data: milestones } = await milestonesRepo.fetchMilestonesByGoalId(goalId);
-  console.log('📝 Goal milestones:', milestones?.length || 0);
-  
-  if (!milestones || milestones.length === 0) {
-    const error = new Error('Goal must have at least one milestone before submitting for review');
+  if (!goal.effort || goal.effort <= 0) {
+    const error = new Error('Goal must define total effort before submitting for review');
     console.error('❌ Validation failed:', error.message);
     throw error;
   }

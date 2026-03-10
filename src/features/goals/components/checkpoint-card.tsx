@@ -79,9 +79,6 @@ export const CheckpointCard = ({
     if (checkpoint.trigger_type === 'AFTER_DAYS' && checkpoint.trigger_config?.after_days) {
       return `Triggers after ${checkpoint.trigger_config.after_days} days from goal start`;
     }
-    if (checkpoint.trigger_type === 'AFTER_MILESTONE' && checkpoint.milestone) {
-      return `Triggers after milestone: ${checkpoint.milestone.title}`;
-    }
     return 'Manual trigger';
   };
 
