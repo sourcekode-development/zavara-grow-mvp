@@ -1,5 +1,6 @@
 import { supabase } from '@/shared/config/supabase';
 import type { UserWithTeams, UserFilters } from '../types';
+import type { UserProfile } from '@/shared/types';
 
 /**
  * USERS REPOSITORY LAYER
@@ -119,3 +120,19 @@ export const getUsersByIds = async (userIds: string[]) => {
   if (error) throw error;
   return data || [];
 };
+
+export const updateUserProfile = async (
+  userId: string,
+  updates: Partial<Omit<UserProfile, 'id' | 'company_id' | 'role' | 'created_at'>>
+) => {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .update(updates)
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as UserProfile;
+};
+

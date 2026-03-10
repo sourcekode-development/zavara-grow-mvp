@@ -24,7 +24,9 @@ _Note for AI Context: The system utilizes a strict "Blueprint vs. Snapshot" data
 
 - **Company:** The top-level tenant organization.
 - **Teams:** Sub-divisions (e.g., "Frontend Squad", "Cloud Infrastructure").
-- **Roles:** \* `COMPANY_ADMIN`: Full visibility and template management.
+- **User Profiles:** Acts as a resource map for Management & Sales (tracking skills, domains, certifications, and project allocation status).
+- **Roles:**
+  - `COMPANY_ADMIN`: Full visibility and template management.
 - `TEAM_LEAD`: Assigns goals, conducts reviews, monitors team dashboards.
 - `DEVELOPER`: Executes daily cadences and submits self-assessments.
 
@@ -39,12 +41,12 @@ _Note for AI Context: The system utilizes a strict "Blueprint vs. Snapshot" data
 
 ### C. Cadence Tracking & Streak System
 
-Goals are executed via honor-system daily/weekly cadence with built-in accountability:
+Goals are executed via honor-system daily/weekly cadence with built-in accountability, driven by flexible "effort" units:
 
-- Developers commit to a frequency (e.g., 60 minutes, Monday–Friday).
+- Developers commit to a frequency and duration, tracking progress via **Effort** units. Effort acts like a story point—for one developer, 1 effort = 1 hour; for another, 1 effort = 1 day, depending on the goal's context.
 - Can manually create sessions upfront or let system auto-generate after approval.
-- Track progress with completion status: TO_DO → IN_PROGRESS → COMPLETED.
-- **Streak Tracking:** System tracks consecutive days without missing sessions for peer motivation.
+- Track progress with completed effort and status transitions: TO_DO → IN_PROGRESS → COMPLETED.
+- **Streak Tracking:** System automatically tracks consecutive days without missing sessions (and adding effort) for peer motivation, incorporating a brief grace period to maintain continuity.
 - **Team Visibility:** Dashboards show everyone's progress, creating healthy peer pressure.
 
 ### D. Checkpoints & Validation
@@ -62,7 +64,7 @@ To validate knowledge retention (not just task completion):
 **KPI Templates:** Performance review blueprints with weighted metrics totaling 100%.
 
 - **Point-Based System:** 1,000 total points distributed across categories (Technical Excellence, Mentorship, etc.).
-- **Daily Evidence:** Developers submit proof of work; Team Leads review and award points.
+- **Daily Evidence:** Developers submit proof of work (with the ability to attach screenshots directly as evidence); Team Leads review and award points.
 - **Continuous Scoring:** Real-time visibility instead of waiting for quarterly reviews.
 - **Snapshotting:** When assigned, KPIs are immutable snapshots preserving historical integrity.
 

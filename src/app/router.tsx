@@ -14,6 +14,7 @@ import { CheckpointsListPage } from "@/features/goals/pages/checkpoints-list.pag
 import { MyCheckpointsPage } from "@/features/goals/pages/my-checkpoints.page";
 import { UsersPage } from "@/features/users/pages/users.page";
 import { UserInvitesPage } from "@/features/users/pages/user-invites.page";
+import { ProfilePage } from "@/features/users/pages/profile.page";
 import { AppLayout } from "@/app/layout";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useEffect } from "react";
@@ -112,7 +113,7 @@ export const AppRouter = () => {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/teams" element={<TeamsPage />} />
             <Route path="/teams/:teamId" element={<TeamDetailPage />} />
-            
+
             {/* Goals Routes */}
             <Route path="/goals" element={<GoalsPage />} />
             <Route path="/goals/create" element={<GoalCreatePage />} />
@@ -122,15 +123,16 @@ export const AppRouter = () => {
             <Route path="/sessions/today" element={<TodaySessionsPage />} />
             <Route path="/goals/checkpoints/my" element={<MyCheckpointsPage />} />
             <Route path="/checkpoints" element={<CheckpointsListPage />} />
-            
+
             {/* KPI Routes */}
             <Route path="/kpis/templates" element={<KpiTemplatesPage />} />
             <Route path="/kpis/categories" element={<KpiCategoriesPage />} />
             <Route path="/kpis/developer-kpis" element={<DevelopersKpisListPage />} />
             <Route path="/kpis/claims" element={<KpiClaimsPage />} />
             <Route path="/kpis/your-kpis" element={<YourKpisPage />} />
-            
+
             {/* User Routes */}
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/users/invites" element={<UserInvitesPage />} />
           </Route>

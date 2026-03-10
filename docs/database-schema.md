@@ -30,6 +30,14 @@ We need a dedicated table to track pending invitations. This acts as a secure wa
 - `company_id` (UUID, Foreign Key)
 - `full_name` (String)
 - `role` (Enum): `COMPANY_ADMIN`, `TEAM_LEAD`, `DEVELOPER`.
+- `avatar_url` (String, Nullable)
+- `seniority_level` (String, Nullable): e.g., "Junior", "Mid", "Senior", "Lead"
+- `core_skills` (JSONB, Nullable): Array of skills e.g., `["React", "Node.js"]`
+- `industry_domains` (JSONB, Nullable): Array of domains e.g., `["Healthcare", "FinTech"]`
+- `certifications` (JSONB, Nullable): Array of earned certs/badges
+- `allocation_status` (Enum, Nullable): `BILLABLE`, `BENCH`, `INTERNAL_PROJECT`
+- `github_url` (String, Nullable)
+- `linkedin_url` (String, Nullable)
 
 **Table: `teams**`
 
@@ -147,10 +155,14 @@ With this schema, you can easily enforce the exact rules you laid out at the dat
   }
   ```
 
-**Analytics:**
+**Effort & Analytics:**
 
-- `current_streak` (Integer): Current consecutive days without missing
-- `longest_streak` (Integer): Best streak achieved
+- `effort` (Numeric, Nullable): Total effort required to complete the goal (e.g., story points).
+- `effort_description` (Text, Nullable): Informational text for effort unit definition.
+- `completed_effort` (Numeric): Total completed effort value.
+- `last_effort_date` (Date, Nullable): Date when completed effort last increased for streak calculation.
+- `current_streak` (Integer): Current consecutive days of recorded effort without missing.
+- `longest_streak` (Integer): Best streak achieved.
 - `total_sessions` (Integer): Total cadence sessions
 - `completed_sessions` (Integer): Completed sessions count
 
@@ -194,6 +206,8 @@ _Developers can manually create sessions during DRAFT, or let system auto-genera
 - `description` (Text, Nullable): What they plan to do
 - `scheduled_date` (Date, Nullable): Can schedule later
 - `duration_minutes` (Integer, Default 60): Session duration
+- `session_effort` (Numeric, Default 1): Planned effort for this session; supports decimals.
+- `completed_effort` (Numeric, Default 0): Actual effort completed in this session; supports decimals.
 - `status` (Enum): `TO_DO`, `IN_PROGRESS`, `COMPLETED`, `DUE`, `MISSED`, `SKIPPED`
 - `summary_text` (Text, Nullable): What they actually accomplished
 - `skip_reason` (Text, Nullable): If status is SKIPPED
@@ -374,7 +388,7 @@ Developers submit daily "proof of work" which Leads verify, building up points o
 - `metric_id` (UUID, Foreign Key): Links to `developer_kpi_metrics`.
 - `developer_id` (UUID, Foreign Key): The developer submitting the claim.
 - `description` (Text): e.g., "I mentored Sujai on WebRTC for 2 hours."
-- `attachments` (JSONB): Array of storage URLs for screenshots/proof.
+- `screenshot_paths` (JSONB): Array of Supabase Storage object paths for claim screenshots (max 2).
 - `status` (Enum): `PENDING`, `APPROVED`, `REJECTED`, `CHANGES_REQUESTED`.
 - `points_awarded` (Integer): Assigned by Lead upon approval.
 - `reviewer_id` (UUID, Foreign Key): The Lead who reviewed.

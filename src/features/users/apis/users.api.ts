@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as usersRepo from '../repository/users.repository';
-import type { ApiResponse } from '@/shared/types';
+import type { ApiResponse, UserProfile } from '@/shared/types';
 import type { UserWithTeams, UserFilters, PaginatedUsers } from '../types';
 
 /**
@@ -82,6 +82,24 @@ export const getUserDetails = async (
     return {
       success: false,
       error: error.message || 'Failed to fetch user details',
+    };
+  }
+};
+
+export const updateUserProfile = async (
+  userId: string,
+  updates: Partial<Omit<UserProfile, 'id' | 'company_id' | 'role' | 'created_at'>>
+): Promise<ApiResponse<UserProfile>> => {
+  try {
+    const data = await usersRepo.updateUserProfile(userId, updates);
+    return {
+      success: true,
+      data,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Failed to update user profile',
     };
   }
 };

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import { ChevronsUpDownIcon, SparklesIcon, BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
+import { useNavigate } from "react-router"
 
 export function NavUser({
   user,
@@ -32,6 +33,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const { logout } = useAuth()
+  const navigate = useNavigate()
 
   return (
     <SidebarMenu>
@@ -81,10 +83,9 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheckIcon
-                />
-                Account
+              <DropdownMenuItem onClick={() => navigate("/profile")}>
+                <BadgeCheckIcon />
+                Profile Settings
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <CreditCardIcon

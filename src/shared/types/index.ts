@@ -19,6 +19,15 @@ export const InviteStatus = {
 
 export type InviteStatus = typeof InviteStatus[keyof typeof InviteStatus];
 
+export const AllocationStatus = {
+  BILLABLE: 'BILLABLE',
+  BENCH: 'BENCH',
+  INTERNAL_PROJECT: 'INTERNAL_PROJECT',
+} as const;
+
+export type AllocationStatus = typeof AllocationStatus[keyof typeof AllocationStatus];
+
+
 // ============================================================================
 // DATABASE ENTITIES
 // ============================================================================
@@ -36,6 +45,13 @@ export interface UserProfile {
   role: UserRole;
   email?: string;
   created_at?: string;
+  seniority_level?: string | null;
+  core_skills?: string[] | null;
+  industry_domains?: string[] | null;
+  certifications?: string[] | null;
+  allocation_status?: AllocationStatus | null;
+  github_url?: string | null;
+  linkedin_url?: string | null;
 }
 
 export interface CompanyInvite {
