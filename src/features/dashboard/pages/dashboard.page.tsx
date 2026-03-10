@@ -59,8 +59,8 @@ export const DashboardPage = () => {
       new Date(goal.last_effort_date)
     );
 
-    // Grace period: keep streak for up to 2 days without effort.
-    const effectiveStreak = daysSinceLastEffort <= 2 ? goal.current_streak : 0;
+    // Grace period: keep streak for up to 3 days (2-day wait window).
+    const effectiveStreak = daysSinceLastEffort <= 3 ? goal.current_streak : 0;
     return Math.max(maxStreak, effectiveStreak);
   }, 0);
 

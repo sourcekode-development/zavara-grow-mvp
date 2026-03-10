@@ -4,11 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-// import { Calendar } from '@/components/ui/calendar';
-// import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-// import { Calendar as CalendarIcon } from 'lucide-react';
-// import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import type { CadenceSession, CadenceSessionStatus } from '../types';
 
@@ -43,17 +39,12 @@ export const SessionFormDialog = ({
     milestone_id: null,
   });
 
-  // const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-
   useEffect(() => {
     if (session) {
       setFormData({
         ...session,
         goal_id: goalId,
       });
-      // if (session.scheduled_date) {
-      //   setSelectedDate(new Date(session.scheduled_date));
-      // }
     } else {
       setFormData({
         goal_id: goalId,
@@ -67,17 +58,8 @@ export const SessionFormDialog = ({
         notes: '',
         milestone_id: null,
       });
-      // setSelectedDate(undefined);
     }
   }, [session, goalId]);
-
-  // const handleDateSelect = (date: Date | undefined) => {
-  //   setSelectedDate(date);
-  //   setFormData({
-  //     ...formData,
-  //     scheduled_date: date ? date.toISOString().split('T')[0] : null,
-  //   });
-  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,47 +139,6 @@ export const SessionFormDialog = ({
             </div>
           )}
 
-          {/* Scheduled Date and Duration are intentionally hidden for now.
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Scheduled Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, 'MMM dd, yyyy') : 'Pick a date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={handleDateSelect}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="duration">Duration (minutes)</Label>
-              <Input
-                id="duration"
-                type="number"
-                min="15"
-                step="15"
-                value={formData.duration_minutes || 60}
-                onChange={(e) =>
-                  setFormData({ ...formData, duration_minutes: parseInt(e.target.value) || 60 })
-                }
-              />
-            </div>
-          </div>
-          */}
-
           <div className="space-y-2">
             <Label htmlFor="sessionEffort">Session Effort</Label>
             <Input
@@ -259,18 +200,6 @@ export const SessionFormDialog = ({
               </SelectContent>
             </Select>
           </div>
-
-          {/* Notes */}
-          {/* <div className="space-y-2">
-            <Label htmlFor="notes">Session Notes (Optional)</Label>
-            <Textarea
-              id="notes"
-              placeholder="Add notes or summary for this session..."
-              value={formData.notes || ''}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-            />
-          </div> */}
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">

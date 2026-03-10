@@ -39,10 +39,6 @@ export const claimsStorageRepository = {
     };
   },
 
-  getPublicUrl(path: string): string {
-    return supabase.storage.from(KPI_CLAIMS_BUCKET).getPublicUrl(path).data.publicUrl;
-  },
-
   async createSignedUrl(
     path: string,
     expiresInSeconds = 3600

@@ -69,20 +69,19 @@ export const GoalProgress = ({ goal }: GoalProgressProps) => {
           })}
         </div>
 
-        {/* Streak */}
-        {/* {goal.current_streak > 0 && ( */}
-        <div className="pt-4 border-t">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Current Streak</p>
-              <p className="text-xs text-muted-foreground">
-                Longest: {goal.longest_streak} days
-              </p>
+        {goal.current_streak > 0 && (
+          <div className="pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Current Streak</p>
+                <p className="text-xs text-muted-foreground">
+                  Longest: {goal.longest_streak} days
+                </p>
+              </div>
+              <StreakBadge streak={goal.current_streak} size="lg" />
             </div>
-            <StreakBadge streak={goal.current_streak} size="lg" />
           </div>
-        </div>
-        {/* )} */}
+        )}
       </CardContent>
     </Card>
   );

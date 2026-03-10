@@ -1,4 +1,8 @@
 import {
+  useEffect,
+  useState,
+} from 'react';
+import {
   Table,
   TableBody,
   TableCell,
@@ -34,6 +38,37 @@ export const MySubmissionsTable = ({
   submissions,
   onViewSubmission,
 }: MySubmissionsTableProps) => {
+  const [signedScreenshotUrls, setSignedScreenshotUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSignedUrls = async () => {
+      const entries = await Promise.all(
+        submissions.map(async (submission): Promise<[string, string]> => {
+          const path = submission.screenshot_paths?.[0];
+          if (!path) {
+            return [submission.id, ''];
+          }
+
+          const signedUrl = await claimsStorageApi.getSignedScreenshotUrl(path);
+          return [submission.id, signedUrl || ''];
+        })
+      );
+
+      if (isMounted) {
+        setSignedScreenshotUrls(
+          Object.fromEntries(entries.filter(([, url]) => Boolean(url)))
+        );
+      }
+    };
+
+    void loadSignedUrls();
+    return () => {
+      isMounted = false;
+    };
+  }, [submissions]);
+
   if (submissions.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -58,10 +93,7 @@ export const MySubmissionsTable = ({
         </TableHeader>
         <TableBody>
           {submissions.map((submission) => {
-            const screenshotPath = submission.screenshot_paths?.[0];
-            const screenshotUrl = screenshotPath
-              ? claimsStorageApi.getScreenshotUrl(screenshotPath)
-              : null;
+            const screenshotUrl = signedScreenshotUrls[submission.id] || null;
             const evidenceUrl = screenshotUrl || submission.attachments?.[0] || null;
 
             return (

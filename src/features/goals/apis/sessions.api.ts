@@ -90,7 +90,7 @@ const assertGoalAllowsExecutionPlanning = async (goalId: string) => {
     throw new Error('Goal not found');
   }
 
-  const allowedStatuses = new Set(['APPROVED', 'MODIFIED']);
+  const allowedStatuses = new Set(['APPROVED', 'IN_PROGRESS']);
   if (!allowedStatuses.has(String(goal.status))) {
     throw new Error('Sessions and checkpoints can only be created for approved goals.');
   }
