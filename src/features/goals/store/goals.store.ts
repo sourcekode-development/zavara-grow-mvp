@@ -3,7 +3,15 @@
 // ============================================================================
 
 import { create } from 'zustand';
-import type { Goal, GoalWithDetails, GoalsQueryFilters, UpdateGoalRequest, Checkpoint, CheckpointStatus } from '../types';
+import type {
+  Goal,
+  GoalWithDetails,
+  GoalsQueryFilters,
+  CreateGoalRequest,
+  UpdateGoalRequest,
+  Checkpoint,
+  CheckpointStatus,
+} from '../types';
 import * as goalsApi from '../apis/goals.api';
 import * as checkpointsApi from '../apis/checkpoints.api';
 
@@ -21,12 +29,7 @@ interface GoalsState {
   fetchGoalById: (goalId: string) => Promise<void>;
   createGoal: (
     userId: string,
-    data: {
-      title: string;
-      description?: string;
-      effort?: number;
-      effort_description?: string;
-    }
+    data: CreateGoalRequest
   ) => Promise<Goal | null>;
   updateGoal: (goalId: string, data: Partial<Goal>) => Promise<void>;
   deleteGoal: (goalId: string) => Promise<void>;

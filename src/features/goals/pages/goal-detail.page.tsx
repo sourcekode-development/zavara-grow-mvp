@@ -51,7 +51,8 @@ export const GoalDetailPage = () => {
   const isOwner = goal?.user_id === user?.id;
   const isRejectedGoal = goal?.status === 'ABANDONED';
   const requiresChanges = goal?.status === 'CHANGES_REQUESTED';
-  const canCreateExecutionItems = goal?.status === 'APPROVED';
+  const canCreateExecutionItems =
+    goal?.status === 'APPROVED' || goal?.status === 'IN_PROGRESS';
   const createBlockedReason = requiresChanges
     ? 'This goal requires modifications before you can create sessions or checkpoints.'
     : 'Sessions and checkpoints can only be created for approved goals.';

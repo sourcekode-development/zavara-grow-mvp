@@ -141,6 +141,7 @@ export interface Goal {
   effort: number | null;
   effort_description: string | null;
   completed_effort: number;
+  duration_months: number | null;
   total_duration_days: number | null;
   status: GoalStatus;
   start_date: string | null;
@@ -330,6 +331,7 @@ export interface CreateGoalRequest {
   description?: string;
   effort?: number;
   effort_description?: string;
+  duration_months?: number;
   template_id?: string;
   duplicated_from?: string;
 }
@@ -339,6 +341,7 @@ export interface UpdateGoalRequest {
   description?: string;
   effort?: number;
   effort_description?: string;
+  duration_months?: number;
   completed_effort?: number;
   is_public?: boolean;
 }
