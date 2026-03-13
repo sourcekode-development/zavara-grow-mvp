@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Loader2 } from 'lucide-react';
 import type { CadenceSession, CadenceSessionStatus } from '../types';
 
@@ -15,6 +16,7 @@ interface SessionFormDialogProps {
   session?: CadenceSession | null;
   goalId: string;
   milestones?: Array<{ id: string; title: string }>;
+  canEditProgress?: boolean;
 }
 
 export const SessionFormDialog = ({
@@ -24,7 +26,9 @@ export const SessionFormDialog = ({
   session,
   goalId,
   milestones = [],
+  canEditProgress = true,
 }: SessionFormDialogProps) => {
+  const progressLockedMessage = 'Goal is not started. Please start the goal first.';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Partial<CadenceSession>>({
     goal_id: goalId,
@@ -161,19 +165,39 @@ export const SessionFormDialog = ({
 
           <div className="space-y-2">
             <Label htmlFor="completedEffort">Completed Effort</Label>
-            <Input
-              id="completedEffort"
-              type="number"
-              min="0"
-              step="0.1"
-              value={formData.completed_effort ?? 0}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  completed_effort: Number(e.target.value) || 0,
-                })
-              }
-            />
+            {canEditProgress ? (
+              <Input
+                id="completedEffort"
+                type="number"
+                min="0"
+                step="0.1"
+                value={formData.completed_effort ?? 0}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    completed_effort: Number(e.target.value) || 0,
+                  })
+                }
+              />
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="block">
+                    <Input
+                      id="completedEffort"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={formData.completed_effort ?? 0}
+                      disabled
+                      title={progressLockedMessage}
+                      onChange={() => {}}
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{progressLockedMessage}</TooltipContent>
+              </Tooltip>
+            )}
             <p className="text-xs text-muted-foreground">
               Actual effort completed in this session. Supports decimals (example: 2.5).
             </p>
@@ -182,23 +206,54 @@ export const SessionFormDialog = ({
           {/* Status */}
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select
-              value={formData.status || 'TO_DO'}
-              onValueChange={(value) =>
-                setFormData({ ...formData, status: value as CadenceSessionStatus })
-              }
-            >
-              <SelectTrigger id="status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {canEditProgress ? (
+              <Select
+                value={formData.status || 'TO_DO'}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, status: value as CadenceSessionStatus })
+                }
+              >
+                <SelectTrigger id="status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="block">
+                    <Select
+                      value={formData.status || 'TO_DO'}
+                      disabled
+                      onValueChange={() => {}}
+                    >
+                      <SelectTrigger id="status" title={progressLockedMessage}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{progressLockedMessage}</TooltipContent>
+              </Tooltip>
+            )}
+            {!canEditProgress && (
+              <p className="text-xs text-muted-foreground">
+                {progressLockedMessage}
+              </p>
+            )}
           </div>
 
           {/* Actions */}

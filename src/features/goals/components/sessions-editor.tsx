@@ -18,6 +18,7 @@ interface SessionsEditorProps {
   onDeleteSession: (sessionId: string) => Promise<void>;
   isLoading?: boolean;
   canCreate?: boolean;
+  canEditProgress?: boolean;
   hideCreateActions?: boolean;
   createBlockedReason?: string;
 }
@@ -31,6 +32,7 @@ export const SessionsEditor = ({
   onDeleteSession,
   isLoading = false,
   canCreate = true,
+  canEditProgress = true,
   hideCreateActions = false,
   createBlockedReason = 'Sessions and checkpoints can only be created for approved goals.',
 }: SessionsEditorProps) => {
@@ -237,6 +239,7 @@ export const SessionsEditor = ({
         session={editingSession}
         goalId={goalId}
         milestones={milestones}
+        canEditProgress={canEditProgress}
       />
 
       {/* Delete Confirmation Dialog */}

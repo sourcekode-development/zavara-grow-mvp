@@ -176,12 +176,10 @@ export const GoalEditPage = () => {
   }
 
   const isRejectedGoal = goal.status === 'ABANDONED';
-  const requiresChanges = goal.status === 'CHANGES_REQUESTED';
-  const canCreateExecutionItems =
-    goal.status === 'APPROVED' || goal.status === 'IN_PROGRESS';
-  const createBlockedReason = requiresChanges
-    ? 'This goal requires modifications before you can create sessions or checkpoints.'
-    : 'Sessions and checkpoints can only be created for approved goals.';
+  const canCreateCheckpoints = goal.status === 'IN_PROGRESS';
+  const canCreateSessions = !isRejectedGoal;
+  const canEditSessionProgress = goal.status === 'IN_PROGRESS';
+  const createBlockedReason = 'Goal is not started. Please start the goal first.';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -277,7 +275,8 @@ export const GoalEditPage = () => {
                 onUpdateSession={handleUpdateSession}
                 onDeleteSession={handleDeleteSession}
                 isLoading={sessionLoading}
-                canCreate={canCreateExecutionItems}
+                canCreate={canCreateSessions}
+                canEditProgress={canEditSessionProgress}
                 hideCreateActions={isRejectedGoal}
                 createBlockedReason={createBlockedReason}
               />
@@ -292,7 +291,7 @@ export const GoalEditPage = () => {
                 onDeleteCheckpoint={handleDeleteCheckpoint}
                 isLoading={checkpointLoading}
                 canEdit
-                canCreate={canCreateExecutionItems}
+                canCreate={canCreateCheckpoints}
                 hideCreateActions={isRejectedGoal}
                 createBlockedReason={createBlockedReason}
               />
