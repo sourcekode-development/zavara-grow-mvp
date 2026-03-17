@@ -63,7 +63,15 @@ export const createSession = async (request: CreateSessionRequest) => {
   if (request.completed_effort !== undefined && request.completed_effort < 0) {
     throw new Error('Completed effort cannot be negative');
   }
-  await assertGoalAllowsExecutionPlanning(request.goal_id);
+  const { data: goal } = await goalsRepo.fetchGoalById(request.goal_id);
+  if (!goal) {
+    throw new Error('Goal not found');
+  }
+  if (!isGoalStartedForExecution(goal.status) && Number(request.completed_effort ?? 0) > 0) {
+    throw new Error(
+      'Goal is not started. Please start the goal before updating completed effort.'
+    );
+  }
 
   await validatePlannedEffortForCreate(request.goal_id, request.session_effort ?? 1);
 
@@ -84,16 +92,9 @@ export const createSession = async (request: CreateSessionRequest) => {
   return data;
 };
 
-const assertGoalAllowsExecutionPlanning = async (goalId: string) => {
-  const { data: goal } = await goalsRepo.fetchGoalById(goalId);
-  if (!goal) {
-    throw new Error('Goal not found');
-  }
-
-  const allowedStatuses = new Set(['APPROVED', 'IN_PROGRESS']);
-  if (!allowedStatuses.has(String(goal.status))) {
-    throw new Error('Sessions and checkpoints can only be created for approved goals.');
-  }
+const isGoalStartedForExecution = (status: string) => {
+  const allowedStatuses = new Set(['IN_PROGRESS']);
+  return allowedStatuses.has(status);
 };
 
 /**
@@ -111,6 +112,18 @@ export const updateSession = async (sessionId: string, request: UpdateSessionReq
   
   if (fetchError || !session) {
     throw new Error('Session not found');
+  }
+  const { data: goal } = await goalsRepo.fetchGoalById(session.goal_id);
+  if (!goal) {
+    throw new Error('Goal not found');
+  }
+
+  const attemptsProgressUpdate =
+    request.status !== undefined || request.completed_effort !== undefined;
+  if (attemptsProgressUpdate && !isGoalStartedForExecution(goal.status)) {
+    throw new Error(
+      'Goal is not started. Please start the goal before updating session status or completed effort.'
+    );
   }
 
   const nextStatus = request.status ?? session.status;

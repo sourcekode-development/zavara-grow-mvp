@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/store/auth.store';
@@ -20,6 +21,8 @@ export const GoalCreatePage = () => {
     description: '',
     effort: '',
     effort_description: '',
+    duration_option: '6',
+    custom_duration_months: '',
   });
 
   const handleSaveDraft = async () => {
@@ -33,6 +36,14 @@ export const GoalCreatePage = () => {
       toast.error('Please enter a valid total effort value');
       return;
     }
+    const parsedDurationMonths =
+      formData.duration_option === 'custom'
+        ? Number(formData.custom_duration_months)
+        : Number(formData.duration_option);
+    if (!Number.isInteger(parsedDurationMonths) || parsedDurationMonths <= 0) {
+      toast.error('Please enter a valid goal duration in months');
+      return;
+    }
 
     try {
       const goal = await createGoal(user.id, {
@@ -40,6 +51,7 @@ export const GoalCreatePage = () => {
         description: formData.description.trim() || undefined,
         effort: parsedEffort,
         effort_description: formData.effort_description.trim() || undefined,
+        duration_months: parsedDurationMonths,
       });
 
       if (!goal) {
@@ -121,6 +133,40 @@ export const GoalCreatePage = () => {
               rows={3}
             />
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="goalDuration">Goal Duration <span className="text-red-500">*</span></Label>
+            <Select
+              value={formData.duration_option}
+              onValueChange={(value) => setFormData({ ...formData, duration_option: value })}
+            >
+              <SelectTrigger id="goalDuration">
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3">3 months</SelectItem>
+                <SelectItem value="6">6 months</SelectItem>
+                <SelectItem value="9">9 months</SelectItem>
+                <SelectItem value="12">12 months</SelectItem>
+                <SelectItem value="custom">Custom months</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {formData.duration_option === 'custom' && (
+            <div className="space-y-2">
+              <Label htmlFor="customDuration">Custom Duration (months) <span className="text-red-500">*</span></Label>
+              <Input
+                id="customDuration"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="e.g., 5"
+                value={formData.custom_duration_months}
+                onChange={(e) => setFormData({ ...formData, custom_duration_months: e.target.value })}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

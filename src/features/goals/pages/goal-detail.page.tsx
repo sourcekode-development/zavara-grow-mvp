@@ -50,11 +50,10 @@ export const GoalDetailPage = () => {
   const canComplete = goal?.status === 'IN_PROGRESS';
   const isOwner = goal?.user_id === user?.id;
   const isRejectedGoal = goal?.status === 'ABANDONED';
-  const requiresChanges = goal?.status === 'CHANGES_REQUESTED';
-  const canCreateExecutionItems = goal?.status === 'APPROVED';
-  const createBlockedReason = requiresChanges
-    ? 'This goal requires modifications before you can create sessions or checkpoints.'
-    : 'Sessions and checkpoints can only be created for approved goals.';
+  const canCreateSessions = !isRejectedGoal;
+  const canCreateCheckpoints = goal?.status === 'IN_PROGRESS';
+  const canEditSessionProgress = goal?.status === 'IN_PROGRESS';
+  const checkpointBlockedReason = 'Goal is not started. Please start the goal first.';
 
   const handleEdit = () => {
     navigate(`/goals/${id}/edit`);
@@ -357,9 +356,10 @@ export const GoalDetailPage = () => {
           onUpdateSession={handleUpdateSession}
           onDeleteSession={handleDeleteSession}
           isLoading={sessionLoading}
-          canCreate={canCreateExecutionItems}
+          canCreate={canCreateSessions}
+          canEditProgress={canEditSessionProgress}
           hideCreateActions={isRejectedGoal}
-          createBlockedReason={createBlockedReason}
+          createBlockedReason={checkpointBlockedReason}
         />
       </div>
 
@@ -371,7 +371,7 @@ export const GoalDetailPage = () => {
               <div className="text-sm font-medium text-red-600 dark:text-red-400">
                 Status: Not Accepted
               </div>
-            ) : canCreateExecutionItems ? (
+            ) : canCreateCheckpoints ? (
               <Button size="sm" variant="outline" onClick={() => navigate(`/goals/${id}/edit?tab=checkpoints`)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Checkpoint
@@ -386,7 +386,7 @@ export const GoalDetailPage = () => {
                     </Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>{createBlockedReason}</TooltipContent>
+                <TooltipContent>{checkpointBlockedReason}</TooltipContent>
               </Tooltip>
             )}
           </div>
@@ -419,7 +419,7 @@ export const GoalDetailPage = () => {
               <div className="text-sm font-medium text-red-600 dark:text-red-400">
                 Status: Not Accepted
               </div>
-            ) : canCreateExecutionItems ? (
+            ) : canCreateCheckpoints ? (
               <Button
                 size="sm"
                 onClick={() => navigate(`/goals/${id}/edit?tab=checkpoints`)}
@@ -438,7 +438,7 @@ export const GoalDetailPage = () => {
                     </Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>{createBlockedReason}</TooltipContent>
+                <TooltipContent>{checkpointBlockedReason}</TooltipContent>
               </Tooltip>
             )}
           </div>

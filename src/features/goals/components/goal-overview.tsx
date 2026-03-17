@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { GoalWithDetails, FrequencyType } from '../types';
 import { Calendar, Clock, Sparkles, Repeat } from 'lucide-react';
+import { differenceInCalendarDays } from 'date-fns';
 
 interface GoalOverviewProps {
   goal: GoalWithDetails;
@@ -15,6 +16,10 @@ const frequencyLabels: Record<FrequencyType, string> = {
 };
 
 export const GoalOverview = ({ goal }: GoalOverviewProps) => {
+  const selectedDurationMonths =
+    goal.duration_months ??
+    (goal.total_duration_days ? Math.ceil(goal.total_duration_days / 30) : null);
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not set';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -22,6 +27,23 @@ export const GoalOverview = ({ goal }: GoalOverviewProps) => {
       day: 'numeric',
       year: 'numeric',
     });
+  };
+
+  const getRemainingTimeLabel = () => {
+    if (!goal.target_end_date) return 'Not started';
+
+    const remainingDays = differenceInCalendarDays(
+      new Date(goal.target_end_date),
+      new Date()
+    );
+
+    if (remainingDays > 0) {
+      return `${remainingDays} day${remainingDays === 1 ? '' : 's'} remaining`;
+    }
+    if (remainingDays === 0) {
+      return 'Ends today';
+    }
+    return `${Math.abs(remainingDays)} day${Math.abs(remainingDays) === 1 ? '' : 's'} overdue`;
   };
 
   return (
@@ -66,6 +88,18 @@ export const GoalOverview = ({ goal }: GoalOverviewProps) => {
           </div>
         )}
 
+        {selectedDurationMonths && (
+          <div className="flex items-start gap-3">
+            <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium">Selected Duration</h4>
+              <p className="text-sm text-muted-foreground">
+                {selectedDurationMonths} month{selectedDurationMonths === 1 ? '' : 's'}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Dates */}
         <div className="space-y-3">
           {goal.start_date && (
@@ -87,6 +121,9 @@ export const GoalOverview = ({ goal }: GoalOverviewProps) => {
                 <h4 className="text-sm font-medium">Target End Date</h4>
                 <p className="text-sm text-muted-foreground">
                   {formatDate(goal.target_end_date)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {getRemainingTimeLabel()}
                 </p>
               </div>
             </div>

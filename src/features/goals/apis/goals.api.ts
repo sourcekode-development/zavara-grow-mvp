@@ -14,6 +14,7 @@ import type {
   SubmitGoalReviewRequest,
   CheckpointStatus,
 } from '../types';
+import { addMonths } from 'date-fns';
 import * as goalsRepo from '../repository/goals.repository';
 import * as reviewsRepo from '../repository/reviews.repository';
 import * as checkpointsApi from './checkpoints.api';
@@ -55,6 +56,12 @@ export const createGoal = async (userId: string, request: CreateGoalRequest) => 
   if (request.effort !== undefined && request.effort <= 0) {
     throw new Error('Effort must be greater than 0');
   }
+  if (
+    request.duration_months !== undefined &&
+    (!Number.isInteger(request.duration_months) || request.duration_months <= 0)
+  ) {
+    throw new Error('Goal duration must be a positive whole number of months');
+  }
 
   const { data, error } = await goalsRepo.createGoal(userId, request);
   
@@ -86,6 +93,12 @@ export const updateGoal = async (goalId: string, request: UpdateGoalRequest) => 
 
   if (request.effort !== undefined && request.effort <= 0) {
     throw new Error('Effort must be greater than 0');
+  }
+  if (
+    request.duration_months !== undefined &&
+    (!Number.isInteger(request.duration_months) || request.duration_months <= 0)
+  ) {
+    throw new Error('Goal duration must be a positive whole number of months');
   }
 
   if (
@@ -230,8 +243,17 @@ export const startGoal = async (goalId: string) => {
     throw new Error('Can only start goals in APPROVED status');
   }
 
+  const startDate = new Date();
+  const resolvedDurationMonths =
+    goal.duration_months ??
+    (goal.total_duration_days ? Math.ceil(goal.total_duration_days / 30) : null);
+  const targetEndDate = resolvedDurationMonths
+    ? addMonths(startDate, resolvedDurationMonths).toISOString().split('T')[0]
+    : null;
+
   const { data, error } = await goalsRepo.updateGoalStatus(goalId, 'IN_PROGRESS', {
-    start_date: new Date().toISOString(),
+    start_date: startDate.toISOString().split('T')[0],
+    target_end_date: targetEndDate,
   });
   
   if (error) {

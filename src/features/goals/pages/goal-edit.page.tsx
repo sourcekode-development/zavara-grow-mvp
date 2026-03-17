@@ -31,6 +31,7 @@ export const GoalEditPage = () => {
     description: '',
     effort: '',
     effort_description: '',
+    duration_months: '',
   });
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export const GoalEditPage = () => {
       description: goal.description || '',
       effort: goal.effort?.toString() || '',
       effort_description: goal.effort_description || '',
+      duration_months: goal.duration_months?.toString() || '',
     });
   }, [goal]);
 
@@ -55,6 +57,11 @@ export const GoalEditPage = () => {
       toast.error('Please enter a valid total effort value');
       return;
     }
+    const parsedDurationMonths = Number(formData.duration_months);
+    if (!Number.isInteger(parsedDurationMonths) || parsedDurationMonths <= 0) {
+      toast.error('Please enter a valid duration in months');
+      return;
+    }
 
     try {
       await updateGoal(id, {
@@ -62,6 +69,7 @@ export const GoalEditPage = () => {
         description: formData.description.trim() || undefined,
         effort: parsedEffort,
         effort_description: formData.effort_description.trim() || undefined,
+        duration_months: parsedDurationMonths,
       });
 
       toast.success('Goal updated successfully');
@@ -168,11 +176,10 @@ export const GoalEditPage = () => {
   }
 
   const isRejectedGoal = goal.status === 'ABANDONED';
-  const requiresChanges = goal.status === 'CHANGES_REQUESTED';
-  const canCreateExecutionItems = goal.status === 'APPROVED';
-  const createBlockedReason = requiresChanges
-    ? 'This goal requires modifications before you can create sessions or checkpoints.'
-    : 'Sessions and checkpoints can only be created for approved goals.';
+  const canCreateCheckpoints = goal.status === 'IN_PROGRESS';
+  const canCreateSessions = !isRejectedGoal;
+  const canEditSessionProgress = goal.status === 'IN_PROGRESS';
+  const createBlockedReason = 'Goal is not started. Please start the goal first.';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -245,6 +252,18 @@ export const GoalEditPage = () => {
                   onChange={(e) => setFormData({ ...formData, effort_description: e.target.value })}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="durationMonths">Goal Duration (months) <span className="text-red-500">*</span></Label>
+                <Input
+                  id="durationMonths"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={formData.duration_months}
+                  onChange={(e) => setFormData({ ...formData, duration_months: e.target.value })}
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="sessions" className="space-y-6">
@@ -256,7 +275,8 @@ export const GoalEditPage = () => {
                 onUpdateSession={handleUpdateSession}
                 onDeleteSession={handleDeleteSession}
                 isLoading={sessionLoading}
-                canCreate={canCreateExecutionItems}
+                canCreate={canCreateSessions}
+                canEditProgress={canEditSessionProgress}
                 hideCreateActions={isRejectedGoal}
                 createBlockedReason={createBlockedReason}
               />
@@ -271,7 +291,7 @@ export const GoalEditPage = () => {
                 onDeleteCheckpoint={handleDeleteCheckpoint}
                 isLoading={checkpointLoading}
                 canEdit
-                canCreate={canCreateExecutionItems}
+                canCreate={canCreateCheckpoints}
                 hideCreateActions={isRejectedGoal}
                 createBlockedReason={createBlockedReason}
               />

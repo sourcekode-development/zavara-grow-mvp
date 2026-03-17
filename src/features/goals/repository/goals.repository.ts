@@ -97,6 +97,8 @@ export const createGoal = async (userId: string, data: CreateGoalRequest) => {
       effort: data.effort ?? null,
       effort_description: data.effort_description || null,
       completed_effort: 0,
+      duration_months: data.duration_months ?? null,
+      total_duration_days: data.duration_months ? data.duration_months * 30 : null,
       template_id: data.template_id || null,
       duplicated_from: data.duplicated_from || null,
       status: 'DRAFT',
