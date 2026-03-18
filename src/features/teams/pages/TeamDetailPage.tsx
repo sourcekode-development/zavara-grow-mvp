@@ -37,6 +37,8 @@ import { TeamMembersList } from '../components/TeamMembersList';
 import { AddMemberDialog } from '../components/AddMemberDialog';
 import { EditTeamDialog } from '../components/EditTeamDialog';
 import type { TeamMemberWithProfile } from '../types';
+import { TeamUpskillDashboard } from '@/features/upskill/components/team-upskill-dashboard';
+import { useUpskillTeamDashboard } from '@/features/upskill/hooks/useUpskill';
 
 export const TeamDetailPage = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -54,6 +56,7 @@ export const TeamDetailPage = () => {
     clearError,
   } = useTeams();
   const { permissions } = useTeamPermissions(teamId);
+  const { teamDashboard, isLoading: upskillLoading } = useUpskillTeamDashboard(teamId);
 
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -255,10 +258,11 @@ export const TeamDetailPage = () => {
       )}
 
       {/* Content Tabs */}
-      <Tabs defaultValue="members" className="w-full">
+      <Tabs defaultValue="upskill" className="w-full">
         <TabsList className="bg-white dark:bg-[#1A2633]">
-          <TabsTrigger value="members">Team Members</TabsTrigger>
+          {/* <TabsTrigger value="members">Team Members</TabsTrigger> */}
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="upskill">Up Skill</TabsTrigger>
         </TabsList>
 
         <TabsContent value="members" className="mt-6">
@@ -309,6 +313,13 @@ export const TeamDetailPage = () => {
               </p>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="upskill" className="mt-6">
+          {upskillLoading && (
+            <div className="text-sm text-muted-foreground">Loading up skill dashboard...</div>
+          )}
+          {!upskillLoading && <TeamUpskillDashboard dashboard={teamDashboard} />}
         </TabsContent>
       </Tabs>
 

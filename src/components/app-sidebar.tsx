@@ -13,9 +13,10 @@ import {
 import { 
   LayoutDashboardIcon, 
   UsersIcon, 
-  TargetIcon, 
+  // TargetIcon, 
   TrendingUpIcon,
-  UsersRoundIcon 
+  UsersRoundIcon,
+  SparklesIcon,
 } from "lucide-react"
 import { useAuthStore } from "@/features/auth/store/auth.store"
 import { UserRole } from "@/shared/types"
@@ -31,58 +32,58 @@ const getNavigationItems = (role?: string) => {
   ];
 
   // Items available to all authenticated users (Developers)
-  const developerGoalItems = [
-    {
-      title: "Goals",
-      url: "/goals",
-      icon: <TargetIcon />,
-      items: [
-        {
-          title: "My Goals",
-          url: "/goals",
-        },
-        {
-          title: "Today's Sessions",
-          url: "/sessions/today",
-        },
-        {
-          title: "My Checkpoints",
-          url: "/goals/checkpoints/my",
-        },
-      ],
-    },
-  ];
+  // const developerGoalItems = [
+  //   {
+  //     title: "Goals",
+  //     url: "/goals",
+  //     icon: <TargetIcon />,
+  //     items: [
+  //       {
+  //         title: "My Goals",
+  //         url: "/goals",
+  //       },
+  //       {
+  //         title: "Today's Sessions",
+  //         url: "/sessions/today",
+  //       },
+  //       {
+  //         title: "My Checkpoints",
+  //         url: "/goals/checkpoints/my",
+  //       },
+  //     ],
+  //   },
+  // ];
 
   // Goals items for Team Leads and Admins (includes review submenu)
-  const managementGoalItems = [
-    {
-      title: "Goals",
-      url: "/goals",
-      icon: <TargetIcon />,
-      items: [
-        {
-          title: "All Goals",
-          url: "/goals",
-        },
-        {
-          title: "Pending Review",
-          url: "/goals/review",
-        },
-        {
-          title: "Today's Sessions",
-          url: "/sessions/today",
-        },
-        {
-          title: "My Checkpoints",
-          url: "/goals/checkpoints/my",
-        },
-        {
-          title: "Review Checkpoints",
-          url: "/checkpoints",
-        },
-      ],
-    },
-  ];
+  // const managementGoalItems = [
+  //   {
+  //     title: "Goals",
+  //     url: "/goals",
+  //     icon: <TargetIcon />,
+  //     items: [
+  //       {
+  //         title: "All Goals",
+  //         url: "/goals",
+  //       },
+  //       {
+  //         title: "Pending Review",
+  //         url: "/goals/review",
+  //       },
+  //       {
+  //         title: "Today's Sessions",
+  //         url: "/sessions/today",
+  //       },
+  //       {
+  //         title: "My Checkpoints",
+  //         url: "/goals/checkpoints/my",
+  //       },
+  //       {
+  //         title: "Review Checkpoints",
+  //         url: "/checkpoints",
+  //       },
+  //     ],
+  //   },
+  // ];
 
   // KPI items for developers (view only)
   const developerKpiItems = [
@@ -130,6 +131,46 @@ const getNavigationItems = (role?: string) => {
     },
   ];
 
+  const developerUpskillItems = [
+    {
+      title: "Up Skill",
+      url: "/up-skill",
+      icon: <SparklesIcon />,
+      items: [
+        {
+          title: "My Programs",
+          url: "/up-skill",
+        },
+        {
+          title: "Templates",
+          url: "/up-skill/templates",
+        },
+      ],
+    },
+  ];
+
+  const managementUpskillItems = [
+    {
+      title: "Up Skill",
+      url: "/up-skill",
+      icon: <SparklesIcon />,
+      items: [
+        {
+          title: "Programs",
+          url: "/up-skill",
+        },
+        {
+          title: "Templates",
+          url: "/up-skill/templates",
+        },
+        {
+          title: "Reviews",
+          url: "/up-skill/review",
+        },
+      ],
+    },
+  ];
+
   // Items available to Team Leads and Admins
   const teamItems = [
     {
@@ -160,12 +201,31 @@ const getNavigationItems = (role?: string) => {
 
   // Build navigation based on role
   if (role === UserRole.COMPANY_ADMIN) {
-    return [...baseItems, ...managementGoalItems, ...managementKpiItems, ...teamItems, ...adminItems];
+    return [
+      ...baseItems,
+      // ...managementGoalItems,
+      ...managementUpskillItems,
+      ...managementKpiItems,
+      ...teamItems,
+      ...adminItems,
+    ];
   } else if (role === UserRole.TEAM_LEAD) {
-    return [...baseItems, ...managementGoalItems, ...managementKpiItems, ...teamItems];
+    return [
+      ...baseItems,
+      // ...managementGoalItems,
+      ...managementUpskillItems,
+      ...managementKpiItems,
+      ...teamItems,
+    ];
   } else {
     // DEVELOPER or default
-    return [...baseItems, ...developerGoalItems, ...developerKpiItems, ...teamItems];
+    return [
+      ...baseItems,
+      // ...developerGoalItems,
+      ...developerUpskillItems,
+      ...developerKpiItems,
+      ...teamItems,
+    ];
   }
 };
 

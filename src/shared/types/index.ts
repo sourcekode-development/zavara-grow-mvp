@@ -84,6 +84,147 @@ export interface TeamMember {
 }
 
 // ============================================================================
+// UPSKILL RELATED TYPES
+// ============================================================================
+
+export const UpskillProgramStatus = {
+  DRAFT: 'DRAFT',
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  APPROVED: 'APPROVED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+export type UpskillProgramStatus =
+  typeof UpskillProgramStatus[keyof typeof UpskillProgramStatus];
+
+export const UpskillModuleStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  WONT_DO: 'WONT_DO',
+} as const;
+
+export type UpskillModuleStatus =
+  typeof UpskillModuleStatus[keyof typeof UpskillModuleStatus];
+
+export const UpskillReviewDecision = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  CHANGES_REQUESTED: 'CHANGES_REQUESTED',
+  AUTO_CLOSED: 'AUTO_CLOSED',
+} as const;
+
+export type UpskillReviewDecision =
+  typeof UpskillReviewDecision[keyof typeof UpskillReviewDecision];
+
+export interface UpskillContent {
+  type: 'plain_text';
+  text: string;
+  html?: string | null;
+}
+
+export interface UpskillProgramTemplate {
+  id: string;
+  company_id: string;
+  created_by: string;
+  title: string;
+  description: string | null;
+  total_effort: number | null;
+  is_active: boolean;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpskillTemplateModule {
+  id: string;
+  template_id: string;
+  order_index: number;
+  title: string;
+  description: string | null;
+  effort: number | null;
+  content: UpskillContent | null;
+  content_plain_text: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpskillProgram {
+  id: string;
+  company_id: string;
+  created_by: string;
+  user_id: string;
+  template_id: string | null;
+  title: string;
+  description: string | null;
+  total_effort: number | null;
+  status: UpskillProgramStatus;
+  review_round: number;
+  approved_by: string | null;
+  approved_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
+  total_modules: number;
+  completed_modules: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpskillProgramModule {
+  id: string;
+  program_id: string;
+  template_module_id: string | null;
+  order_index: number;
+  title: string;
+  description: string | null;
+  effort: number | null;
+  content: UpskillContent | null;
+  content_plain_text: string | null;
+  status: UpskillModuleStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpskillProgramReview {
+  id: string;
+  program_id: string;
+  review_round: number;
+  reviewer_id: string;
+  decision: UpskillReviewDecision;
+  comments: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpskillModuleEffortLog {
+  id: string;
+  program_id: string;
+  module_id: string;
+  user_id: string;
+  effort_used: number;
+  notes: string | null;
+  logged_on: string;
+  created_at: string;
+}
+
+export interface DeveloperUpskillStats {
+  user_id: string;
+  company_id: string;
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
+  total_programs_started: number;
+  total_programs_completed: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
 // AUTH RELATED TYPES
 // ============================================================================
 

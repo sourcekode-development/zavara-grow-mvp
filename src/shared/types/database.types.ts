@@ -1069,6 +1069,432 @@ export type Database = {
           },
         ]
       }
+      developer_upskill_stats: {
+        Row: {
+          company_id: string
+          created_at: string
+          current_streak: number
+          last_activity_date: string | null
+          longest_streak: number
+          total_programs_completed: number
+          total_programs_started: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          current_streak?: number
+          last_activity_date?: string | null
+          longest_streak?: number
+          total_programs_completed?: number
+          total_programs_started?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          current_streak?: number
+          last_activity_date?: string | null
+          longest_streak?: number
+          total_programs_completed?: number
+          total_programs_started?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "developer_upskill_stats_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "developer_upskill_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upskill_module_effort_logs: {
+        Row: {
+          created_at: string
+          effort_used: number
+          id: string
+          logged_on: string
+          module_id: string
+          notes: string | null
+          program_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          effort_used: number
+          id?: string
+          logged_on?: string
+          module_id: string
+          notes?: string | null
+          program_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          effort_used?: number
+          id?: string
+          logged_on?: string
+          module_id?: string
+          notes?: string | null
+          program_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upskill_module_effort_logs_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "upskill_program_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upskill_module_effort_logs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "upskill_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upskill_module_effort_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upskill_program_modules: {
+        Row: {
+          content: Json | null
+          content_plain_text: string | null
+          created_at: string
+          description: string | null
+          effort: number | null
+          id: string
+          order_index: number
+          program_id: string
+          status: Database["public"]["Enums"]["upskill_module_status"]
+          template_module_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json | null
+          content_plain_text?: string | null
+          created_at?: string
+          description?: string | null
+          effort?: number | null
+          id?: string
+          order_index?: number
+          program_id: string
+          status?: Database["public"]["Enums"]["upskill_module_status"]
+          template_module_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json | null
+          content_plain_text?: string | null
+          created_at?: string
+          description?: string | null
+          effort?: number | null
+          id?: string
+          order_index?: number
+          program_id?: string
+          status?: Database["public"]["Enums"]["upskill_module_status"]
+          template_module_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upskill_program_modules_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "upskill_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upskill_program_modules_template_module_id_fkey"
+            columns: ["template_module_id"]
+            isOneToOne: false
+            referencedRelation: "upskill_template_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upskill_program_reviews: {
+        Row: {
+          comments: string | null
+          created_at: string
+          decision: Database["public"]["Enums"]["upskill_review_decision"]
+          id: string
+          program_id: string
+          responded_at: string | null
+          review_round: number
+          reviewer_id: string
+          updated_at: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          decision?: Database["public"]["Enums"]["upskill_review_decision"]
+          id?: string
+          program_id: string
+          responded_at?: string | null
+          review_round?: number
+          reviewer_id: string
+          updated_at?: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          decision?: Database["public"]["Enums"]["upskill_review_decision"]
+          id?: string
+          program_id?: string
+          responded_at?: string | null
+          review_round?: number
+          reviewer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upskill_program_reviews_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "upskill_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upskill_program_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upskill_program_templates: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_published: boolean
+          title: string
+          total_effort: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_published?: boolean
+          title: string
+          total_effort?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_published?: boolean
+          title?: string
+          total_effort?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upskill_program_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upskill_program_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upskill_programs: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          completed_at: string | null
+          completed_modules: number
+          created_at: string
+          created_by: string
+          current_streak: number
+          description: string | null
+          id: string
+          last_activity_date: string | null
+          longest_streak: number
+          review_round: number
+          started_at: string | null
+          status: Database["public"]["Enums"]["upskill_program_status"]
+          template_id: string | null
+          title: string
+          total_effort: number | null
+          total_modules: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          completed_at?: string | null
+          completed_modules?: number
+          created_at?: string
+          created_by: string
+          current_streak?: number
+          description?: string | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          review_round?: number
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["upskill_program_status"]
+          template_id?: string | null
+          title: string
+          total_effort?: number | null
+          total_modules?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          completed_at?: string | null
+          completed_modules?: number
+          created_at?: string
+          created_by?: string
+          current_streak?: number
+          description?: string | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          review_round?: number
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["upskill_program_status"]
+          template_id?: string | null
+          title?: string
+          total_effort?: number | null
+          total_modules?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upskill_programs_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upskill_programs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upskill_programs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upskill_programs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "upskill_program_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upskill_programs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upskill_template_modules: {
+        Row: {
+          content: Json | null
+          content_plain_text: string | null
+          created_at: string
+          description: string | null
+          effort: number | null
+          id: string
+          order_index: number
+          template_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json | null
+          content_plain_text?: string | null
+          created_at?: string
+          description?: string | null
+          effort?: number | null
+          id?: string
+          order_index?: number
+          template_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json | null
+          content_plain_text?: string | null
+          created_at?: string
+          description?: string | null
+          effort?: number | null
+          id?: string
+          order_index?: number
+          template_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upskill_template_modules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "upskill_program_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           allocation_status:
@@ -1186,6 +1612,22 @@ export type Database = {
         | "REJECTED"
         | "CHANGES_REQUESTED"
       milestone_status: "PENDING" | "ACTIVE" | "COMPLETED"
+      upskill_module_status:
+        | "TODO"
+        | "IN_PROGRESS"
+        | "COMPLETED"
+        | "WONT_DO"
+      upskill_program_status:
+        | "DRAFT"
+        | "PENDING_REVIEW"
+        | "APPROVED"
+        | "IN_PROGRESS"
+        | "COMPLETED"
+      upskill_review_decision:
+        | "PENDING"
+        | "APPROVED"
+        | "CHANGES_REQUESTED"
+        | "AUTO_CLOSED"
       user_role: "COMPANY_ADMIN" | "TEAM_LEAD" | "DEVELOPER"
     }
     CompositeTypes: {
@@ -1355,6 +1797,25 @@ export const Constants = {
         "CHANGES_REQUESTED",
       ],
       milestone_status: ["PENDING", "ACTIVE", "COMPLETED"],
+      upskill_module_status: [
+        "TODO",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "WONT_DO",
+      ],
+      upskill_program_status: [
+        "DRAFT",
+        "PENDING_REVIEW",
+        "APPROVED",
+        "IN_PROGRESS",
+        "COMPLETED",
+      ],
+      upskill_review_decision: [
+        "PENDING",
+        "APPROVED",
+        "CHANGES_REQUESTED",
+        "AUTO_CLOSED",
+      ],
       user_role: ["COMPANY_ADMIN", "TEAM_LEAD", "DEVELOPER"],
     },
   },

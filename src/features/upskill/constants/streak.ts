@@ -1,0 +1,2 @@
+export const UPSKILL_STREAK_GRACE_DAYS = 3;
+

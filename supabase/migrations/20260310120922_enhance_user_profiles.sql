@@ -23,54 +23,55 @@ alter table user_profiles
 -- RLS Updates for user_profiles
 
 -- Developers can update their own profile
-create policy "users_can_update_own_profile"
-  on user_profiles
-  for update
-  using (
-    auth.uid() = id
-  )
-  with check (
-    auth.uid() = id
-  );
+create policy "users_can_update_own_profile" on user_profiles for
+update using (auth.uid () = id)
+with
+    check (auth.uid () = id);
 
 -- Company Admins can update any profile within their company
-create policy "company_admins_can_update_profiles"
-  on user_profiles
-  for update
-  using (
+create policy "company_admins_can_update_profiles" on user_profiles for
+update using (
     exists (
-      select 1 from user_profiles admin_profile
-      where admin_profile.id = auth.uid()
-      and admin_profile.role = 'COMPANY_ADMIN'
-      and admin_profile.company_id = user_profiles.company_id
+        select 1
+        from user_profiles admin_profile
+        where
+            admin_profile.id = auth.uid ()
+            and admin_profile.role = 'COMPANY_ADMIN'
+            and admin_profile.company_id = user_profiles.company_id
     )
-  )
-  with check (
-    exists (
-      select 1 from user_profiles admin_profile
-      where admin_profile.id = auth.uid()
-      and admin_profile.role = 'COMPANY_ADMIN'
-      and admin_profile.company_id = user_profiles.company_id
-    )
-  );
+)
+with
+    check (
+        exists (
+            select 1
+            from user_profiles admin_profile
+            where
+                admin_profile.id = auth.uid ()
+                and admin_profile.role = 'COMPANY_ADMIN'
+                and admin_profile.company_id = user_profiles.company_id
+        )
+    );
 
 -- Team Leads can update any profile within their company (or team if more strict, but we'll allow company-wide for MVP management)
-create policy "team_leads_can_update_profiles"
-  on user_profiles
-  for update
-  using (
+create policy "team_leads_can_update_profiles" on user_profiles for
+update using (
     exists (
-      select 1 from user_profiles lead_profile
-      where lead_profile.id = auth.uid()
-      and lead_profile.role = 'TEAM_LEAD'
-      and lead_profile.company_id = user_profiles.company_id
+        select 1
+        from user_profiles lead_profile
+        where
+            lead_profile.id = auth.uid ()
+            and lead_profile.role = 'TEAM_LEAD'
+            and lead_profile.company_id = user_profiles.company_id
     )
-  )
-  with check (
-    exists (
-      select 1 from user_profiles lead_profile
-      where lead_profile.id = auth.uid()
-      and lead_profile.role = 'TEAM_LEAD'
-      and lead_profile.company_id = user_profiles.company_id
-    )
-  );
+)
+with
+    check (
+        exists (
+            select 1
+            from user_profiles lead_profile
+            where
+                lead_profile.id = auth.uid ()
+                and lead_profile.role = 'TEAM_LEAD'
+                and lead_profile.company_id = user_profiles.company_id
+        )
+    );

@@ -23,6 +23,12 @@ import { KpiCategoriesPage } from "@/features/kpis/pages/kpi-categories.page";
 import { DevelopersKpisListPage } from "@/features/kpis/pages/developers-kpis-list.page";
 import { KpiClaimsPage } from "@/features/kpis/pages/kpi-claims.page";
 import { YourKpisPage } from "@/features/kpis/pages/your-kpis.page";
+import { UpskillProgramsPage } from "@/features/upskill/pages/upskill-programs.page";
+import { UpskillProgramCreatePage } from "@/features/upskill/pages/upskill-program-create.page";
+import { UpskillProgramDetailPage } from "@/features/upskill/pages/upskill-program-detail.page";
+import { UpskillProgramEditPage } from "@/features/upskill/pages/upskill-program-edit.page";
+import { UpskillTemplatesPage } from "@/features/upskill/pages/upskill-templates.page";
+import { UpskillReviewPage } from "@/features/upskill/pages/upskill-review.page";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -130,6 +136,14 @@ export const AppRouter = () => {
             <Route path="/kpis/developer-kpis" element={<DevelopersKpisListPage />} />
             <Route path="/kpis/claims" element={<KpiClaimsPage />} />
             <Route path="/kpis/your-kpis" element={<YourKpisPage />} />
+
+            {/* Up Skill Routes */}
+            <Route path="/up-skill" element={<UpskillProgramsPage />} />
+            <Route path="/up-skill/create" element={<UpskillProgramCreatePage />} />
+            <Route path="/up-skill/templates" element={<UpskillTemplatesPage />} />
+            <Route path="/up-skill/review" element={<UpskillReviewPage />} />
+            <Route path="/up-skill/:id" element={<UpskillProgramDetailPage />} />
+            <Route path="/up-skill/:id/edit" element={<UpskillProgramEditPage />} />
 
             {/* User Routes */}
             <Route path="/profile" element={<ProfilePage />} />
