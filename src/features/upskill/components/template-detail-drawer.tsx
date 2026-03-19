@@ -71,7 +71,7 @@ export const TemplateDetailDrawer = ({
                     <div>
                       <p className="text-xs text-muted-foreground">Est. Effort</p>
                       <p className="text-lg font-semibold">
-                        {Number(template.total_effort || 0).toFixed(1)} hrs
+                        {Number(template.total_effort || 0).toFixed(1)}
                       </p>
                     </div>
                   </div>
@@ -149,7 +149,7 @@ export const TemplateDetailDrawer = ({
                                 Effort
                               </p>
                               <p className="font-semibold text-[#3DCF8E]">
-                                {Number(module.effort).toFixed(1)} hrs
+                                {Number(module.effort).toFixed(1)}
                               </p>
                             </div>
                           )}
