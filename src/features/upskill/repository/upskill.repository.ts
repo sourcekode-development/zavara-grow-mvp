@@ -27,7 +27,8 @@ export const fetchPrograms = async (filters?: UpskillProgramFilters) => {
       assignee:user_profiles!upskill_programs_user_id_fkey(id, full_name, email),
       approver:user_profiles!upskill_programs_approved_by_fkey(id, full_name, email),
       template:upskill_program_templates(id, title, description, total_effort, is_active, is_published, company_id, created_by, created_at, updated_at),
-      modules:upskill_program_modules(id, status, effort)
+      modules:upskill_program_modules(id, status, effort),
+      effort_logs:upskill_module_effort_logs(id, module_id, user_id, effort_used, notes, logged_on, created_at)
     `)
     .order('updated_at', { ascending: false });
 

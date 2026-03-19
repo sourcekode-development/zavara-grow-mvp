@@ -1,11 +1,16 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/features/auth/store/auth.store';
+import { UserRole } from '@/shared/types';
 import { UserSearchBar } from '../components/UserSearchBar';
 import { UsersTable } from '../components/UsersTable';
 import { InviteUserDialog } from '../components/InviteUserDialog';
 import { useUsers } from '../hooks/useUsers';
 
 export const UsersPage = () => {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const {
     users,
@@ -19,6 +24,10 @@ export const UsersPage = () => {
     handleClearSearch,
     refetch,
   } = useUsers();
+
+  const canViewFullProfiles =
+    user?.profile?.role === UserRole.COMPANY_ADMIN ||
+    user?.profile?.role === UserRole.TEAM_LEAD;
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,6 +59,9 @@ export const UsersPage = () => {
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        onViewUser={
+          canViewFullProfiles ? (userId) => navigate(`/users/${userId}`) : undefined
+        }
       />
 
       <InviteUserDialog

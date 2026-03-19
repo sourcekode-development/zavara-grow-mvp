@@ -171,9 +171,9 @@ export const UpskillProgramDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" onClick={() => navigate('/up-skill')}>
+      <Button variant="ghost" onClick={() => navigate(-1)}>
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Up Skill
+        Back
       </Button>
 
       {isLoading && <Skeleton className="h-130 rounded-xl" />}

@@ -15,6 +15,7 @@ import { MyCheckpointsPage } from "@/features/goals/pages/my-checkpoints.page";
 import { UsersPage } from "@/features/users/pages/users.page";
 import { UserInvitesPage } from "@/features/users/pages/user-invites.page";
 import { ProfilePage } from "@/features/users/pages/profile.page";
+import { UserDetailPage } from "@/features/users/pages/user-detail.page";
 import { AppLayout } from "@/app/layout";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useEffect } from "react";
@@ -148,6 +149,7 @@ export const AppRouter = () => {
             {/* User Routes */}
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/users/:userId" element={<UserDetailPage />} />
             <Route path="/users/invites" element={<UserInvitesPage />} />
           </Route>
 

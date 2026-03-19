@@ -5,7 +5,7 @@
 - **Name:** Zavara Grow
 - **Tagline:** Turn bench time into billable value and measure developer impact.
 - **Category:** B2B SaaS for IT Service Companies.
-- **The Vision:** While traditional ATS platforms bring talent into a company, Zavara Grow takes ownership of the developer's lifecycle post-hire. It provides a unified ecosystem for Tech Leads and Management to assign learning goals, validate upskilling, and conduct traditional performance appraisals (KPIs)—ultimately ensuring developers can be billed to clients at premium rates faster.
+- **The Vision:** While traditional ATS platforms bring talent into a company, Zavara Grow takes ownership of the developer's lifecycle post-hire. It provides a unified ecosystem for Tech Leads and Management to assign learning goals, run structured up skill programs, validate developer growth, and conduct traditional performance appraisals (KPIs)—ultimately ensuring developers can be billed to clients at premium rates faster.
 
 ## 2. The Problem It Solves
 
@@ -39,7 +39,18 @@ _Note for AI Context: The system utilizes a strict "Blueprint vs. Snapshot" data
 - **Review Workflow:** Submit goals for Team Lead/Admin approval before starting.
 - **Duplication & Sharing:** Successful goals can be duplicated by other developers for peer collaboration.
 
-### C. Cadence Tracking & Streak System
+### C. Up Skill Programs (Parallel Learning System)
+
+Alongside goals, Zavara Grow now supports a more flexible **Up Skill Program** model designed for evolving learning journeys:
+
+- **Template-Driven or Scratch Built:** Developers can create a program from scratch or clone a reusable company template that already contains modules.
+- **Module-Based Planning:** Each program is broken into modules containing title, description, estimated effort, and rich learning content such as links, course references, notes, and internal knowledge.
+- **Estimate-Friendly Execution:** Program effort and module effort are estimates, not rigid constraints. Developers can add, edit, rebalance, or mark modules as `WONT_DO` while the program is already in progress.
+- **Multi-Reviewer Approval:** Developers submit a program to multiple Team Leads/Admins. The first approval is enough to move the program forward.
+- **Effort Logging:** Developers log actual effort against modules over time with notes, creating a real execution trail instead of just a planned structure.
+- **Operational Dashboards:** Individual programs and teams surface progress, logged effort, streaks, module completion, and activity frequency in dashboard views for review sessions.
+
+### D. Cadence Tracking & Streak System
 
 Goals are executed via honor-system daily/weekly cadence with built-in accountability, driven by flexible "effort" units:
 
@@ -48,8 +59,9 @@ Goals are executed via honor-system daily/weekly cadence with built-in accountab
 - Track progress with completed effort and status transitions: TO_DO → IN_PROGRESS → COMPLETED.
 - **Streak Tracking:** System automatically tracks consecutive days without missing sessions (and adding effort) for peer motivation, incorporating a brief grace period to maintain continuity.
 - **Team Visibility:** Dashboards show everyone's progress, creating healthy peer pressure.
+- **Up Skill Streaks:** The newer up skill engine tracks both per-program streaks and overall developer streaks using effort logs, with a configurable grace period so a short gap does not instantly reset momentum.
 
-### D. Checkpoints & Validation
+### E. Checkpoints & Validation
 
 To validate knowledge retention (not just task completion):
 
@@ -59,7 +71,7 @@ To validate knowledge retention (not just task completion):
 - If failed: Action items (micro-goals) guide developer back on track.
 - **Future:** AI-driven automated interviews for instant validation.
 
-### E. Evidence-Based KPI Appraisals
+### F. Evidence-Based KPI Appraisals
 
 **KPI Templates:** Performance review blueprints with weighted metrics totaling 100%.
 
@@ -68,7 +80,7 @@ To validate knowledge retention (not just task completion):
 - **Continuous Scoring:** Real-time visibility instead of waiting for quarterly reviews.
 - **Snapshotting:** When assigned, KPIs are immutable snapshots preserving historical integrity.
 
-### F. Dynamic Pivots (Smart Recovery)
+### G. Dynamic Pivots (Smart Recovery)
 
 Failure triggers corrective action, not dead ends:
 

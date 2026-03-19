@@ -287,15 +287,19 @@ export const getPrograms = async (filters?: UpskillProgramFilters) => {
 
   return ((data || []) as unknown as UpskillProgramWithDetails[]).map((program) => {
     const modules = (program.modules || []) as UpskillProgramModule[];
+    const logs = (program.effort_logs || []) as UpskillModuleEffortLog[];
     const completedModules = modules.filter((module) =>
       isModuleDone(module.status)
     ).length;
+    const totalLoggedEffort = sumLoggedEffort(logs);
+
     return {
       ...program,
       total_modules: modules.length || program.total_modules || 0,
       completed_modules: completedModules || program.completed_modules || 0,
+      effort_logs: logs,
       stats: {
-        total_logged_effort: 0,
+        total_logged_effort: Number(totalLoggedEffort.toFixed(2)),
         completion_percentage:
           Number(program.total_effort || 0) > 0
             ? Math.round(

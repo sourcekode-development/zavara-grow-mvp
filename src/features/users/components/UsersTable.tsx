@@ -17,6 +17,7 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from '@/components/ui/pagination';
+import { Button } from '@/components/ui/button';
 import { UserRole } from '@/shared/types';
 import type { UserWithTeams } from '../types';
 
@@ -26,6 +27,7 @@ interface UsersTableProps {
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onViewUser?: (userId: string) => void;
 }
 
 const getRoleBadgeColor = (role: string) => {
@@ -69,6 +71,7 @@ export const UsersTable = ({
   page,
   totalPages,
   onPageChange,
+  onViewUser,
 }: UsersTableProps) => {
   if (isLoading) {
     return (
@@ -96,6 +99,7 @@ export const UsersTable = ({
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Teams</TableHead>
+              {onViewUser && <TableHead className="text-right">Profile</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -137,6 +141,18 @@ export const UsersTable = ({
                     </span>
                   )}
                 </TableCell>
+                {onViewUser && (
+                  <TableCell className="text-right">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onViewUser(user.id)}
+                    >
+                      View Profile
+                    </Button>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

@@ -4,6 +4,8 @@ User authentication is handled by their internal `auth.users` table. We will cre
 
 > **🔄 Goals Feature Redesigned (March 1, 2026):** The goals system has been redesigned to be **developer-centric** with a review workflow. Developers now create goals themselves, submit for review, and can duplicate successful goals from peers. See sections 2-7 for details.
 
+> **🆕 Up Skill Feature Added (March 18, 2026):** A new `up skill` engine now exists in parallel with goals. It is module-based, review-driven, and designed to better support flexible learning plans, on-the-fly updates, effort logging, and dashboard-heavy team visibility. See section 8 for details.
+
 **Table: `companies**`
 
 - `id` (UUID, Primary Key)
@@ -324,7 +326,155 @@ _Developers can manually create sessions during DRAFT, or let system auto-genera
 
 ---
 
-### 8. The KPI Configuration (The Library)
+### 8. Up Skill Programs (Parallel Learning System)
+
+This feature runs alongside `goals` for now and is intended to become the more flexible long-term upskilling engine.
+
+**Core Workflow**
+
+- Developer creates an `upskill_program` from scratch or from a reusable template.
+- Program is broken into `upskill_program_modules`.
+- Developer submits the program to one or more reviewers.
+- The first reviewer approval marks the whole program `APPROVED`.
+- Developer starts the program, logs effort against modules over time, and manually marks modules `COMPLETED` or `WONT_DO`.
+- Team dashboards aggregate this program activity to show progress, streaks, effort usage, and review readiness.
+
+**Status Enums**
+
+- `upskill_program_status`: `DRAFT`, `PENDING_REVIEW`, `APPROVED`, `IN_PROGRESS`, `COMPLETED`
+- `upskill_module_status`: `TODO`, `IN_PROGRESS`, `COMPLETED`, `WONT_DO`
+- `upskill_review_decision`: `PENDING`, `APPROVED`, `CHANGES_REQUESTED`, `AUTO_CLOSED`
+
+#### 8.1 Templates
+
+**Table: `upskill_program_templates`**
+
+- `id` (UUID, Primary Key)
+- `company_id` (UUID, Foreign Key): Company-scoped reusable template
+- `created_by` (UUID, Foreign Key): Creator from `user_profiles`
+- `title` (String, Required)
+- `description` (Text, Nullable)
+- `total_effort` (Numeric, Nullable): Estimated total effort for the template
+- `is_active` (Boolean): Whether the template is available in the library
+- `is_published` (Boolean): Whether it should be visible as a reusable company default
+- `created_at` / `updated_at` (Timestamp)
+
+**Table: `upskill_template_modules`**
+
+- `id` (UUID, Primary Key)
+- `template_id` (UUID, Foreign Key): Links to `upskill_program_templates`
+- `order_index` (Integer): Module display order
+- `title` (String, Required)
+- `description` (Text, Nullable)
+- `effort` (Numeric, Nullable): Estimated module effort
+- `content` (JSONB, Nullable): Rich content payload for notes/links/resources
+- `content_plain_text` (Text, Nullable): Searchable/plain-text version of content
+- `created_at` / `updated_at` (Timestamp)
+
+#### 8.2 Program Execution
+
+**Table: `upskill_programs`**
+
+- `id` (UUID, Primary Key)
+- `company_id` (UUID, Foreign Key)
+- `created_by` (UUID, Foreign Key): Developer who created the program
+- `user_id` (UUID, Foreign Key): Developer executing the program
+- `template_id` (UUID, Foreign Key, Nullable): Source template if cloned
+- `title` (String, Required)
+- `description` (Text, Nullable)
+- `total_effort` (Numeric, Nullable): Estimated total effort for the full program
+- `status` (Enum): `DRAFT`, `PENDING_REVIEW`, `APPROVED`, `IN_PROGRESS`, `COMPLETED`
+- `review_round` (Integer): Current submission round number
+- `approved_by` (UUID, Foreign Key, Nullable): First reviewer who approved
+- `approved_at` (Timestamp, Nullable)
+- `started_at` (Timestamp, Nullable)
+- `completed_at` (Timestamp, Nullable)
+- `current_streak` (Integer): Current program streak
+- `longest_streak` (Integer): Best program streak achieved
+- `last_activity_date` (Date, Nullable): Last day with logged effort
+- `total_modules` (Integer): Denormalized module count for dashboard reads
+- `completed_modules` (Integer): Denormalized completed/wont-do module count
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- `total_effort` is an estimate and can be updated while the program is evolving.
+- We intentionally do **not** store `completed_effort` on the program record. Actual delivered effort is derived from `upskill_module_effort_logs`.
+- Program completion is module-driven: when all modules are `COMPLETED` or `WONT_DO`, the program can move to `COMPLETED`.
+
+**Table: `upskill_program_modules`**
+
+- `id` (UUID, Primary Key)
+- `program_id` (UUID, Foreign Key)
+- `template_module_id` (UUID, Foreign Key, Nullable): Source template module if cloned
+- `order_index` (Integer): Module order inside the program
+- `title` (String, Required)
+- `description` (Text, Nullable)
+- `effort` (Numeric, Nullable): Estimated effort for this module
+- `content` (JSONB, Nullable): Rich content payload
+- `content_plain_text` (Text, Nullable): Searchable/plain-text version
+- `status` (Enum): `TODO`, `IN_PROGRESS`, `COMPLETED`, `WONT_DO`
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- Modules are intentionally flexible and can be added or edited even after approval and during execution.
+- Module completion is manual-first; logged effort informs dashboards and review context but does not automatically force a module to complete.
+
+#### 8.3 Review Workflow
+
+**Table: `upskill_program_reviews`**
+
+- `id` (UUID, Primary Key)
+- `program_id` (UUID, Foreign Key)
+- `review_round` (Integer): Which submission round the decision belongs to
+- `reviewer_id` (UUID, Foreign Key)
+- `decision` (Enum): `PENDING`, `APPROVED`, `CHANGES_REQUESTED`, `AUTO_CLOSED`
+- `comments` (Text, Nullable)
+- `responded_at` (Timestamp, Nullable)
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- One row is created per reviewer for a submission round.
+- The first reviewer approval is enough to approve the whole program.
+- Remaining pending reviewer rows are marked `AUTO_CLOSED`.
+- If a reviewer requests changes before anyone approves, the program returns to `DRAFT`.
+
+#### 8.4 Effort Logging and Analytics
+
+**Table: `upskill_module_effort_logs`**
+
+- `id` (UUID, Primary Key)
+- `program_id` (UUID, Foreign Key)
+- `module_id` (UUID, Foreign Key)
+- `user_id` (UUID, Foreign Key)
+- `effort_used` (Numeric, Required): Actual effort delivered in that log entry
+- `notes` (Text, Nullable)
+- `logged_on` (Date): Business date for the effort log
+- `created_at` (Timestamp)
+
+**Table: `developer_upskill_stats`**
+
+- `user_id` (UUID, Primary Key, Foreign Key)
+- `company_id` (UUID, Foreign Key)
+- `current_streak` (Integer): Overall up skill streak across programs
+- `longest_streak` (Integer): Best overall up skill streak
+- `last_activity_date` (Date, Nullable)
+- `total_programs_started` (Integer)
+- `total_programs_completed` (Integer)
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- `upskill_module_effort_logs` is the source of truth for actual delivered effort.
+- Program dashboards aggregate logs by program and module.
+- Team dashboards aggregate logs by developer and team membership.
+- The up skill streak logic supports a configurable grace period in application code. Current behavior keeps the streak alive through 3 inactive days and breaks it on day 4.
+
+---
+
+### 9. The KPI Configuration (The Library)
 
 These tables define the "Global" and "Company-specific" rules for performance tracking.
 
@@ -354,7 +504,7 @@ These tables define the "Global" and "Company-specific" rules for performance tr
 
 ---
 
-### 9. The KPI Execution (The Developer Snapshot)
+### 10. The KPI Execution (The Developer Snapshot)
 
 When a Tech Lead assigns a KPI, the data is "snapshotted" so it remains unchanged even if the template is edited later.
 
