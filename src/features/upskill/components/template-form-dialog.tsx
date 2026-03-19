@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -132,16 +133,23 @@ export const TemplateFormDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-7xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {initialTemplate ? 'Edit Template' : 'Create Template'}
-          </DialogTitle>
-          <DialogDescription>
-            Templates can include modules so developers can duplicate a full program structure.
-          </DialogDescription>
-        </DialogHeader>
+    <Drawer open={open} onOpenChange={onOpenChange} direction="right">
+      <DrawerContent className="!w-full !max-w-4xl overflow-y-auto p-6">
+        <DrawerHeader className="flex flex-row items-start justify-between">
+          <div className="flex-1">
+            <DrawerTitle className="text-2xl">
+              {initialTemplate ? 'Edit Template' : 'Create Template'}
+            </DrawerTitle>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Templates can include modules so developers can duplicate a full program structure.
+            </p>
+          </div>
+          <DrawerClose asChild>
+            <Button variant="ghost" size="icon" className="shrink-0">
+              <X className="h-4 w-4" />
+            </Button>
+          </DrawerClose>
+        </DrawerHeader>
 
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
@@ -285,19 +293,21 @@ export const TemplateFormDialog = ({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-[#3DCF8E] hover:bg-[#2fb577]"
-            onClick={handleSubmit}
-            disabled={!title.trim() || isSubmitting}
-          >
-            {isSubmitting ? 'Saving...' : initialTemplate ? 'Update Template' : 'Create Template'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <DrawerFooter>
+          <div className='flex justify-end items-center w-full flex-row gap-4'>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-[#3DCF8E] hover:bg-[#2fb577]"
+              onClick={handleSubmit}
+              disabled={!title.trim() || isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : initialTemplate ? 'Update Template' : 'Create Template'}
+            </Button>
+          </div>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 };

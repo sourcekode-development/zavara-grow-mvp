@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Layers3, Pencil, Plus } from 'lucide-react';
+import { Layers3, Pencil, Plus, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { TemplateFormDialog } from '../components/template-form-dialog';
+import { TemplateDetailDrawer } from '../components/template-detail-drawer';
 import { useUpskillActions, useUpskillTemplates } from '../hooks/useUpskill';
 import type { UpskillTemplateWithModules } from '../types';
 
@@ -18,6 +19,9 @@ export const UpskillTemplatesPage = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<UpskillTemplateWithModules | null>(
     null
   );
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+  const [selectedDetailTemplate, setSelectedDetailTemplate] =
+    useState<UpskillTemplateWithModules | null>(null);
 
   const handleCreate = async (request: {
     title: string;
@@ -98,17 +102,30 @@ export const UpskillTemplatesPage = () => {
                     {template.description || 'No description yet.'}
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedTemplate(template);
-                    setDialogOpen(true);
-                  }}
-                >
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedDetailTemplate(template);
+                      setDetailDrawerOpen(true);
+                    }}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    View
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedTemplate(template);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -160,6 +177,12 @@ export const UpskillTemplatesPage = () => {
         onOpenChange={setDialogOpen}
         initialTemplate={selectedTemplate}
         onSubmit={handleCreate}
+      />
+
+      <TemplateDetailDrawer
+        open={detailDrawerOpen}
+        onOpenChange={setDetailDrawerOpen}
+        template={selectedDetailTemplate}
       />
     </div>
   );
