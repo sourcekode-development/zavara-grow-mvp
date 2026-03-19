@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Edit, Play, Plus, Send, Sparkles, Trophy } from 'lucide-react';
+import { ArrowLeft, Edit, Eye, Play, Plus, Send, Sparkles, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { useAuthStore } from '@/features/auth/store/auth.store';
 import { useUpskillStore } from '../store/upskill.store';
 import { EffortLogDialog } from '../components/effort-log-dialog';
 import { ModuleEditorDialog } from '../components/module-editor-dialog';
+import { ModuleLogsDialog } from '../components/module-logs-dialog';
 import { ModuleStatusBadge } from '../components/module-status-badge';
 import { ProgramDashboard } from '../components/program-dashboard';
 import { ProgramStatusBadge } from '../components/program-status-badge';
@@ -38,6 +39,7 @@ export const UpskillProgramDetailPage = () => {
   const [moduleDialogOpen, setModuleDialogOpen] = useState(false);
   const [effortDialogOpen, setEffortDialogOpen] = useState(false);
   const [reviewerDialogOpen, setReviewerDialogOpen] = useState(false);
+  const [logsDialogOpen, setLogsDialogOpen] = useState(false);
   const [selectedModule, setSelectedModule] = useState<UpskillProgramModuleWithMetrics | null>(
     null
   );
@@ -54,6 +56,13 @@ export const UpskillProgramDetailPage = () => {
   const isOwner = useMemo(() => program?.user_id === user?.id, [program?.user_id, user?.id]);
   const modules = (program?.modules || []) as UpskillProgramModuleWithMetrics[];
   const canMutate = program?.status !== 'COMPLETED';
+
+  const programTotalEffort = program?.total_effort ?? null;
+
+  const maxEffortForModule = () => {
+    if (programTotalEffort === null) return null;
+    return Math.max(0, programTotalEffort - (dashboard?.summary.total_logged_effort || 0));
+  };
 
   if (!id) {
     return null;
@@ -167,7 +176,7 @@ export const UpskillProgramDetailPage = () => {
         Back to Up Skill
       </Button>
 
-      {isLoading && <Skeleton className="h-[520px] rounded-xl" />}
+      {isLoading && <Skeleton className="h-130 rounded-xl" />}
 
       {!isLoading && error && (
         <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/10 dark:text-red-300">
@@ -253,56 +262,75 @@ export const UpskillProgramDetailPage = () => {
                     key={module.id}
                     className="rounded-xl border border-border/60 p-4"
                   >
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold">{module.title}</h3>
-                          <ModuleStatusBadge status={module.status} />
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between w-full">
+                      <div className="space-y-2 w-full">
+                        <div className="flex flex-wrap items-center gap-2 justify-between pb-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-semibold">{module.title}</h3>
+                            <ModuleStatusBadge status={module.status} />
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {isOwner && canMutate && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedModule(module);
+                                  setModuleDialogOpen(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            )}
+                            {isOwner && program.status === 'IN_PROGRESS' && (
+                              <Button
+                                size="sm"
+                                className="bg-[#3DCF8E] hover:bg-[#2fb577]"
+                                onClick={() => {
+                                  setSelectedModule(module);
+                                  setEffortDialogOpen(true);
+                                }}
+                              >
+                                Log Effort
+                              </Button>
+                            )}
+                            {isOwner && canMutate && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteModule(module.id)}
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                           {module.description || 'No description yet.'}
                         </p>
-                        <div className="text-xs text-muted-foreground">
-                          Estimated effort {Number(module.effort || 0).toFixed(1)} | Logged effort{' '}
-                          {Number(module.logged_effort || 0).toFixed(1)} | Logs {module.log_count}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-xs">
+                            Estimated effort {Number(module.effort || 0).toFixed(1)} | Logged effort{' '}
+                            {Number(module.logged_effort || 0).toFixed(1)} | Logs {module.log_count}
+                          </div>
+                          {module.log_count > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedModule(module);
+                                setLogsDialogOpen(true);
+                              }}
+                              className="h-7 px-2 text-xs"
+                            >
+                              <Eye className="mr-1 h-3 w-3" />
+                              View Logs
+                            </Button>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {isOwner && canMutate && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedModule(module);
-                              setModuleDialogOpen(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        )}
-                        {isOwner && program.status === 'IN_PROGRESS' && (
-                          <Button
-                            size="sm"
-                            className="bg-[#3DCF8E] hover:bg-[#2fb577]"
-                            onClick={() => {
-                              setSelectedModule(module);
-                              setEffortDialogOpen(true);
-                            }}
-                          >
-                            Log Effort
-                          </Button>
-                        )}
-                        {isOwner && canMutate && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteModule(module.id)}
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div>
+                      
                     </div>
 
                     {module.content?.text && (
@@ -367,6 +395,7 @@ export const UpskillProgramDetailPage = () => {
             programId={program.id}
             module={selectedModule}
             onSave={handleModuleSave}
+            maxAllowedEffort={maxEffortForModule()}
           />
 
           <EffortLogDialog
@@ -382,6 +411,14 @@ export const UpskillProgramDetailPage = () => {
             reviewers={reviewers}
             isLoading={isMutating}
             onSubmit={handleSubmitForReview}
+          />
+
+          <ModuleLogsDialog
+            open={logsDialogOpen}
+            onOpenChange={setLogsDialogOpen}
+            module={selectedModule}
+            logs={program.effort_logs}
+            isLoading={isLoading}
           />
         </>
       )}

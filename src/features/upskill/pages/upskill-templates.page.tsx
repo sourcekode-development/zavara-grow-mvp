@@ -97,35 +97,38 @@ export const UpskillTemplatesPage = () => {
             <Card key={template.id}>
               <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div>
-                  <CardTitle>{template.title}</CardTitle>
+                  <div className='flex flex-wrap items-center gap-2 justify-between pb-1'>
+                    <CardTitle>{template.title}</CardTitle>
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDetailTemplate(template);
+                          setDetailDrawerOpen(true);
+                        }}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTemplate(template);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {template.description || 'No description yet.'}
                   </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedDetailTemplate(template);
-                      setDetailDrawerOpen(true);
-                    }}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    View
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedTemplate(template);
-                      setDialogOpen(true);
-                    }}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                </div>
+                
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="grid gap-3 sm:grid-cols-3">

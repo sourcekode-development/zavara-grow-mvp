@@ -138,7 +138,7 @@ export const TemplateDetailDrawer = ({
                               </CardTitle>
                             </div>
                             {module.description && (
-                              <p className="mt-2 text-sm text-muted-foreground">
+                              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
                                 {module.description}
                               </p>
                             )}
@@ -156,7 +156,7 @@ export const TemplateDetailDrawer = ({
                         </div>
                       </CardHeader>
 
-                      {(module.content_plain_text || module.content) && (
+                      {(module.content?.text) && (
                         <>
                           <Separator />
                           <CardContent className="pt-3">
@@ -164,11 +164,8 @@ export const TemplateDetailDrawer = ({
                               <p className="text-xs font-medium text-muted-foreground">
                                 Content
                               </p>
-                              <div className="mt-2 text-sm leading-relaxed text-foreground">
-                                {module.content_plain_text ||
-                                  (module.content?.type === 'plain_text'
-                                    ? module.content.text
-                                    : 'No content details')}
+                              <div className="mt-2 rounded-lg bg-muted/40 p-3 text-sm whitespace-pre-wrap">
+                                {module.content.text}
                               </div>
                             </div>
                           </CardContent>

@@ -23,6 +23,7 @@ interface ModuleEditorDialogProps {
   onOpenChange: (open: boolean) => void;
   programId: string;
   module?: UpskillProgramModuleWithMetrics | null;
+  maxAllowedEffort?: number | null;
   onSave: (
     data: CreateUpskillModuleRequest | UpdateUpskillModuleRequest
   ) => Promise<void>;
@@ -33,6 +34,7 @@ export const ModuleEditorDialog = ({
   onOpenChange,
   programId,
   module,
+  maxAllowedEffort,
   onSave,
 }: ModuleEditorDialogProps) => {
   const [title, setTitle] = useState('');
@@ -60,7 +62,31 @@ export const ModuleEditorDialog = ({
     }
   }, [module, open]);
 
+  const effortNumber = Number(effort);
+  const isValidEffortNumber = effort.trim() !== '' && !Number.isNaN(effortNumber);
+
+  const maxEffort = maxAllowedEffort ?? undefined;
+
+  const effortValidationError =
+    !effort || effort.trim() === ''
+      ? undefined
+      : !isValidEffortNumber
+      ? 'Enter a valid number.'
+      : effortNumber < 0 || effortNumber === 0
+      ? 'Effort must be 0 or greater.'
+      : maxEffort !== undefined && effortNumber > maxEffort
+      ? `Effort cannot exceed remaining program effort (${maxEffort.toFixed(1)}).`
+      : undefined;
+
+  const isSaveDisabled =
+    isSaving ||
+    !title.trim() ||
+    !effort.trim() ||
+    !!effortValidationError
+
   const handleSave = async () => {
+    if (effortValidationError) return;
+
     setIsSaving(true);
     try {
       await onSave(
@@ -135,11 +161,20 @@ export const ModuleEditorDialog = ({
                 id="upskill-module-effort"
                 type="number"
                 min="0.1"
+                max={maxAllowedEffort ?? undefined}
                 step="0.1"
                 value={effort}
                 onChange={(event) => setEffort(event.target.value)}
                 placeholder="e.g. 4"
               />
+
+              {effortValidationError ? (
+                <p className="text-sm text-destructive">{effortValidationError}</p>
+              ) : maxAllowedEffort !== null && maxAllowedEffort !== undefined ? (
+                <p className="text-sm text-muted-foreground">
+                  Remaining program effort available: {maxAllowedEffort.toFixed(1)}
+                </p>
+              ) : null}
             </div>
 
             {module && (
@@ -179,7 +214,7 @@ export const ModuleEditorDialog = ({
           <Button
             className="bg-[#3DCF8E] hover:bg-[#2fb577]"
             onClick={handleSave}
-            disabled={!title.trim() || isSaving}
+            disabled={isSaveDisabled}
           >
             {isSaving ? 'Saving...' : module ? 'Update Module' : 'Add Module'}
           </Button>

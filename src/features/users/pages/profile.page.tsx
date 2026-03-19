@@ -28,19 +28,29 @@ export function ProfilePage() {
 
   // Pre-fill form when user is available
   useEffect(() => {
-    if (user?.profile) {
-      setFormData({
-        full_name: user.profile.full_name || '',
-        seniority_level: user.profile.seniority_level || '',
-        github_url: user.profile.github_url || '',
-        linkedin_url: user.profile.linkedin_url || '',
-        allocation_status: user.profile.allocation_status || '',
-        core_skills: user.profile.core_skills || [],
-        industry_domains: user.profile.industry_domains || [],
-        certifications: user.profile.certifications || [],
+    const profile = user?.profile;
+    if (profile) {
+      setFormData((prev) => {
+        const newFormData = {
+          full_name: profile.full_name || '',
+          seniority_level: profile.seniority_level || '',
+          github_url: profile.github_url || '',
+          linkedin_url: profile.linkedin_url || '',
+          allocation_status: profile.allocation_status || '',
+          core_skills: profile.core_skills || [],
+          industry_domains: profile.industry_domains || [],
+          certifications: profile.certifications || [],
+        };
+
+        // Only update if data has actually changed
+        if (JSON.stringify(prev) === JSON.stringify(newFormData)) {
+          return prev;
+        }
+        return newFormData;
       });
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.profile?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

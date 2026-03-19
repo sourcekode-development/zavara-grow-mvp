@@ -31,11 +31,39 @@ export const EffortLogDialog = ({
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const estimatedEffort = Number(module?.effort ?? 0);
+  const loggedEffort = Number(module?.logged_effort ?? 0);
+  const remainingEffort = Math.max(0, estimatedEffort - loggedEffort);
+
+  const effortUsedNumber = Number(effortUsed);
+  const isValidEffortNumber = effortUsed !== '' && !Number.isNaN(effortUsedNumber);
+
+  const effortValidationError =
+    !effortUsed || effortUsed === ''
+      ? undefined
+      : !isValidEffortNumber
+      ? 'Enter a valid number.'
+      : effortUsedNumber <= 0
+      ? 'Effort must be greater than 0.'
+      : effortUsedNumber > remainingEffort
+      ? `You can log at most ${remainingEffort.toFixed(1)} more hour${
+          remainingEffort === 1 ? '' : 's'
+        }.`
+      : undefined;
+
+  const isSubmitDisabled =
+    isSubmitting ||
+    !effortUsed ||
+    !!effortValidationError ||
+    remainingEffort <= 0;
+
   const handleSubmit = async () => {
+    if (effortValidationError || !effortUsed || !isValidEffortNumber) return;
+
     setIsSubmitting(true);
     try {
       await onSubmit({
-        effort_used: Number(effortUsed),
+        effort_used: effortUsedNumber,
         logged_on: loggedOn,
         notes: notes.trim() || undefined,
       });
@@ -71,11 +99,25 @@ export const EffortLogDialog = ({
               id="upskill-log-effort"
               type="number"
               min="0.1"
+              max={remainingEffort > 0 ? remainingEffort : undefined}
               step="0.1"
               value={effortUsed}
               onChange={(event) => setEffortUsed(event.target.value)}
               placeholder="e.g. 1.5"
             />
+
+            {effortValidationError ? (
+              <p className="text-sm text-destructive">{effortValidationError}</p>
+            ) : remainingEffort <= 0 ? (
+              <p className="text-sm text-muted-foreground">
+                This module has no remaining effort to log.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                You can log up to {remainingEffort.toFixed(1)} more hour
+                {remainingEffort === 1 ? '' : 's'}.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -107,7 +149,7 @@ export const EffortLogDialog = ({
           <Button
             className="bg-[#3DCF8E] hover:bg-[#2fb577]"
             onClick={handleSubmit}
-            disabled={!effortUsed || isSubmitting}
+            disabled={isSubmitDisabled}
           >
             {isSubmitting ? 'Saving...' : 'Save Log'}
           </Button>
