@@ -398,15 +398,27 @@ export const updateTemplate = async (
   templateId: string,
   data: UpdateUpskillTemplateRequest
 ) => {
+  const { ...templateData } = data;
   return supabase
     .from('upskill_program_templates')
     .update({
-      ...data,
+      title: templateData.title,
+      description: templateData.description ?? undefined,
+      total_effort: templateData.total_effort ?? null,
+      is_active: templateData.is_active,
+      is_published: templateData.is_published,
       updated_at: new Date().toISOString(),
     })
     .eq('id', templateId)
     .select()
     .single();
+};
+
+export const deleteTemplate = async (templateId: string) => {
+  return supabase
+    .from('upskill_program_templates')
+    .delete()
+    .eq('id', templateId);
 };
 
 export const replaceTemplateModules = async (

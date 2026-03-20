@@ -126,6 +126,7 @@ export const useUpskillActions = () => {
     recordEffortLog: store.recordEffortLog,
     createTemplate: store.createTemplate,
     updateTemplate: store.updateTemplate,
+    deleteTemplate: store.deleteTemplate,
     promoteProgramToTemplate: store.promoteProgramToTemplate,
   };
 };

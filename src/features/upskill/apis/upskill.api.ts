@@ -564,7 +564,8 @@ export const updateTemplate = async (
   templateId: string,
   request: UpdateUpskillTemplateRequest
 ) => {
-  const { error } = await upskillRepo.updateTemplate(templateId, request);
+  const { ...templatePayload } = request;
+  const { error } = await upskillRepo.updateTemplate(templateId, templatePayload);
 
   if (error) {
     throw new Error(error.message);
@@ -590,6 +591,14 @@ export const updateTemplate = async (
   }
 
   return data;
+};
+
+export const deleteTemplate = async (templateId: string) => {
+  const { error } = await upskillRepo.deleteTemplate(templateId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 };
 
 export const promoteProgramToTemplate = async (

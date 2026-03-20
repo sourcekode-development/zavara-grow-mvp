@@ -81,6 +81,7 @@ interface UpskillState {
     templateId: string,
     request: UpdateUpskillTemplateRequest
   ) => Promise<void>;
+  deleteTemplate: (templateId: string) => Promise<boolean>;
   promoteProgramToTemplate: (
     programId: string,
     userId: string,
@@ -379,6 +380,24 @@ export const useUpskillStore = create<UpskillState>((set, get) => ({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to update template',
       });
+    }
+  },
+
+  deleteTemplate: async (templateId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await upskillApi.deleteTemplate(templateId);
+      set((state) => ({
+        isLoading: false,
+        templates: state.templates.filter((template) => template.id !== templateId),
+      }));
+      return true;
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to delete template',
+      });
+      return false;
     }
   },
 

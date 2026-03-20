@@ -1,20 +1,38 @@
 import { useState } from 'react';
-import { Layers3, Pencil, Plus, Eye } from 'lucide-react';
+import { Layers3, Pencil, Plus, Eye, MoreVertical, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { TemplateFormDialog } from '../components/template-form-dialog';
 import { TemplateDetailDrawer } from '../components/template-detail-drawer';
 import { useUpskillActions, useUpskillTemplates } from '../hooks/useUpskill';
 import type { UpskillTemplateWithModules } from '../types';
+import { UserRole } from '@/shared/types';
 
 export const UpskillTemplatesPage = () => {
   const { user } = useAuthStore();
   const { templates, isLoading, refetch } = useUpskillTemplates({
     company_id: user?.profile?.company_id,
   });
-  const { createTemplate, updateTemplate, error } = useUpskillActions();
+  const { createTemplate, updateTemplate, deleteTemplate, error, isLoading: isMutating } =
+    useUpskillActions();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<UpskillTemplateWithModules | null>(
     null
@@ -22,6 +40,10 @@ export const UpskillTemplatesPage = () => {
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [selectedDetailTemplate, setSelectedDetailTemplate] =
     useState<UpskillTemplateWithModules | null>(null);
+  const [templateToDelete, setTemplateToDelete] = useState<UpskillTemplateWithModules | null>(
+    null
+  );
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleCreate = async (request: {
     title: string;
@@ -55,6 +77,24 @@ export const UpskillTemplatesPage = () => {
 
     toast.success(selectedTemplate ? 'Template updated' : 'Template created');
     setSelectedTemplate(null);
+    await refetch();
+  };
+
+  const canDeleteTemplate = user?.profile?.role === UserRole.COMPANY_ADMIN;
+
+  const handleDeleteTemplate = async () => {
+    if (!templateToDelete) return;
+
+    const deleted = await deleteTemplate(templateToDelete.id);
+
+    if (!deleted) {
+      toast.error(error || 'Failed to delete template');
+      return;
+    }
+
+    toast.success('Template deleted');
+    setDeleteDialogOpen(false);
+    setTemplateToDelete(null);
     await refetch();
   };
 
@@ -96,32 +136,49 @@ export const UpskillTemplatesPage = () => {
           {templates.map((template) => (
             <Card key={template.id}>
               <CardHeader className="flex flex-row items-start justify-between gap-4">
-                <div>
-                  <div className='flex flex-wrap items-center gap-2 justify-between pb-1'>
+                <div className='w-full'>
+                  <div className='flex flex-wrap items-center gap-2 justify-between pb-1 w-full'>
                     <CardTitle>{template.title}</CardTitle>
-                    <div className="flex gap-2 shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedDetailTemplate(template);
-                          setDetailDrawerOpen(true);
-                        }}
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        View
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTemplate(template);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </Button>
+                    <div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedDetailTemplate(template);
+                              setDetailDrawerOpen(true);
+                            }}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedTemplate(template);
+                              setDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          {canDeleteTemplate && (
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => {
+                                setTemplateToDelete(template);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -187,6 +244,34 @@ export const UpskillTemplatesPage = () => {
         onOpenChange={setDetailDrawerOpen}
         template={selectedDetailTemplate}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete template</AlertDialogTitle>
+            <AlertDialogDescription>
+              {templateToDelete
+                ? `This will permanently delete "${templateToDelete.title}" and its template modules. Existing programs created from it will remain, but their template link will be removed.`
+                : 'This will permanently delete the selected template.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={isMutating}
+              onClick={() => setTemplateToDelete(null)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isMutating}
+              onClick={handleDeleteTemplate}
+            >
+              {isMutating ? 'Deleting...' : 'Delete Template'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
