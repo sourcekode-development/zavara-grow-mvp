@@ -168,6 +168,51 @@ const getLogsLastSevenDays = (logs: UpskillModuleEffortLog[]) => {
   }).length;
 };
 
+const getEffortLastSevenDays = (logs: UpskillModuleEffortLog[]) => {
+  const today = new Date(getTodayIso());
+
+  return Number(
+    logs
+      .filter((log) => {
+        const dayDifference = differenceInCalendarDays(today, new Date(log.logged_on));
+        return dayDifference >= 0 && dayDifference <= 6;
+      })
+      .reduce((sum, log) => sum + Number(log.effort_used || 0), 0)
+      .toFixed(2)
+  );
+};
+
+const getLogsPreviousSevenDays = (logs: UpskillModuleEffortLog[]) => {
+  const today = new Date(getTodayIso());
+
+  return logs.filter((log) => {
+    const dayDifference = differenceInCalendarDays(today, new Date(log.logged_on));
+    return dayDifference >= 7 && dayDifference <= 13;
+  }).length;
+};
+
+const getEffortPreviousSevenDays = (logs: UpskillModuleEffortLog[]) => {
+  const today = new Date(getTodayIso());
+
+  return Number(
+    logs
+      .filter((log) => {
+        const dayDifference = differenceInCalendarDays(today, new Date(log.logged_on));
+        return dayDifference >= 7 && dayDifference <= 13;
+      })
+      .reduce((sum, log) => sum + Number(log.effort_used || 0), 0)
+      .toFixed(2)
+  );
+};
+
+const getGrowthPercentage = (currentValue: number, previousValue: number) => {
+  if (previousValue === 0) {
+    return currentValue > 0 ? 100 : 0;
+  }
+
+  return Math.round(((currentValue - previousValue) / previousValue) * 100);
+};
+
 const getDistinctActiveDays = (logs: UpskillModuleEffortLog[]) =>
   new Set(logs.map((log) => log.logged_on)).size;
 
@@ -947,6 +992,18 @@ export const getTeamDashboard = async (
       (sum, program) => sum + sumLoggedEffort(program.effort_logs || []),
       0
     );
+    const totalLoggedEffortLastSevenDays = memberPrograms.reduce(
+      (sum, program) => sum + getEffortLastSevenDays(program.effort_logs || []),
+      0
+    );
+    const totalLogs = memberPrograms.reduce(
+      (sum, program) => sum + (program.effort_logs || []).length,
+      0
+    );
+    const totalLogsLastSevenDays = memberPrograms.reduce(
+      (sum, program) => sum + getLogsLastSevenDays(program.effort_logs || []),
+      0
+    );
 
     const latestActivityDate = memberPrograms
       .map((program) => program.last_activity_date)
@@ -965,6 +1022,9 @@ export const getTeamDashboard = async (
       ),
       overall_longest_streak: statsRow?.longest_streak || 0,
       total_logged_effort: Number(totalLoggedEffort.toFixed(2)),
+      total_logged_effort_last_7_days: Number(totalLoggedEffortLastSevenDays.toFixed(2)),
+      total_logs: totalLogs,
+      total_logs_last_7_days: totalLogsLastSevenDays,
       latest_activity_date: latestActivityDate,
       active_program_details: activePrograms.map((program) => {
         const modules = program.modules || [];
@@ -974,12 +1034,22 @@ export const getTeamDashboard = async (
         ).length;
         const estimatedEffort = Number(program.total_effort || 0);
         const completedEffort = Number(sumLoggedEffort(programLogs).toFixed(2));
+        const loggedEffortLastSevenDays = getEffortLastSevenDays(programLogs);
+        const loggedEffortPreviousSevenDays = getEffortPreviousSevenDays(programLogs);
+        const logsLastSevenDays = getLogsLastSevenDays(programLogs);
+        const logsPreviousSevenDays = getLogsPreviousSevenDays(programLogs);
         return {
           program_id: program.id,
           title: program.title,
           status: program.status,
           estimated_effort: estimatedEffort,
           completed_effort: completedEffort,
+          logged_effort_last_7_days: loggedEffortLastSevenDays,
+          logged_effort_previous_7_days: loggedEffortPreviousSevenDays,
+          effort_growth_percentage: getGrowthPercentage(
+            loggedEffortLastSevenDays,
+            loggedEffortPreviousSevenDays
+          ),
           effort_completion_percentage:
             estimatedEffort > 0
               ? Math.min(100, Math.round((completedEffort / estimatedEffort) * 100))
@@ -996,7 +1066,8 @@ export const getTeamDashboard = async (
           ),
           total_logged_effort: completedEffort,
           total_logs: programLogs.length,
-          logs_last_7_days: getLogsLastSevenDays(programLogs),
+          logs_last_7_days: logsLastSevenDays,
+          logs_previous_7_days: logsPreviousSevenDays,
           active_days: getDistinctActiveDays(programLogs),
           last_activity_date: program.last_activity_date,
         };

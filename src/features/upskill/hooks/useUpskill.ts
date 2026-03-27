@@ -1,6 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import * as upskillApi from '../apis/upskill.api';
 import { useUpskillStore } from '../store/upskill.store';
-import type { UpskillProgramFilters, UpskillTemplateFilters } from '../types';
+import type {
+  UpskillProgramFilters,
+  UpskillProgramWithDetails,
+  UpskillTemplateFilters,
+} from '../types';
 
 export const useUpskillPrograms = (filters?: UpskillProgramFilters) => {
   const { programs, isLoading, error, fetchPrograms, clearError } = useUpskillStore();
@@ -48,6 +53,47 @@ export const useUpskillProgram = (programId?: string) => {
       await fetchProgramById(programId);
       await fetchProgramDashboard(programId);
     },
+  };
+};
+
+export const useUpskillProgramDetails = (programId?: string) => {
+  const [program, setProgram] = useState<UpskillProgramWithDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProgramDetails = async (id: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const nextProgram = await upskillApi.getProgramById(id);
+      setProgram(nextProgram);
+    } catch (fetchError) {
+      setError(
+        fetchError instanceof Error ? fetchError.message : 'Failed to fetch program'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!programId) {
+      setProgram(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    void fetchProgramDetails(programId);
+  }, [programId]);
+
+  return {
+    program,
+    isLoading,
+    error,
+    clearError: () => setError(null),
+    refetch: () => programId && fetchProgramDetails(programId),
   };
 };
 

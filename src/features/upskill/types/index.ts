@@ -216,6 +216,9 @@ export interface TeamMemberUpskillSnapshot {
   overall_current_streak: number;
   overall_longest_streak: number;
   total_logged_effort: number;
+  total_logged_effort_last_7_days: number;
+  total_logs: number;
+  total_logs_last_7_days: number;
   latest_activity_date: string | null;
   active_program_details: Array<{
     program_id: string;
@@ -223,6 +226,9 @@ export interface TeamMemberUpskillSnapshot {
     status: UpskillProgramStatus;
     estimated_effort: number;
     completed_effort: number;
+    logged_effort_last_7_days: number;
+    logged_effort_previous_7_days: number;
+    effort_growth_percentage: number;
     effort_completion_percentage: number;
     total_modules: number;
     completed_modules: number;
@@ -231,6 +237,7 @@ export interface TeamMemberUpskillSnapshot {
     total_logged_effort: number;
     total_logs: number;
     logs_last_7_days: number;
+    logs_previous_7_days: number;
     active_days: number;
     last_activity_date: string | null;
   }>;
