@@ -80,7 +80,25 @@ To validate knowledge retention (not just task completion):
 - **Continuous Scoring:** Real-time visibility instead of waiting for quarterly reviews.
 - **Snapshotting:** When assigned, KPIs are immutable snapshots preserving historical integrity.
 
-### G. Dynamic Pivots (Smart Recovery)
+### G. Client and Project Allocation Mapping
+
+To make KPI reviews and survey routing practical in real companies, Zavara Grow now includes a lightweight **client and project allocation layer**.
+
+- **Projects are first-class entities:** Every company can create projects regardless of whether they are service-based or product-based.
+- **Clients are optional:** External delivery work can be modeled as `client -> project`, while internal/product work simply uses a project with no client.
+- **Many-to-many staffing:** Developers can be assigned to multiple projects, and projects can have multiple members with different responsibilities.
+- **Project-Level Responsibility:** Review ownership is modeled at the project membership level, not as a separate global user role.
+- **Lead-Owned Delivery Support:** If there is no dedicated project manager, a Team Lead or senior engineer can act as the project's `DELIVERY_OWNER` and also be marked as the primary reviewer.
+- **History Matters:** Project assignments are preserved historically using join and leave dates instead of hard deletion. This is important for future KPI reviews, monthly manager surveys, and understanding the delivery context behind a developer's performance.
+
+This gives the platform a better operational picture of:
+
+- who a developer is currently working with
+- who owns offshore delivery for that project
+- who should receive KPI review requests
+- who should receive future project/client feedback surveys
+
+### H. Dynamic Pivots (Smart Recovery)
 
 Failure triggers corrective action, not dead ends:
 
@@ -94,6 +112,7 @@ Failure triggers corrective action, not dead ends:
 - **Built for Engineering, Not Just HR:** Actionable tracking of technical skills rather than generic corporate training.
 - **Actionable ROI:** Directly ties platform usage to the service company's bottom line (faster bench-to-billing pipeline).
 - **Historical Integrity:** The snapshot architecture guarantees compliance and accurate historical appraisals, regardless of how company standards evolve.
+- **Operational Context for Reviews:** KPI and growth discussions can be tied back to the developer's actual project and delivery environment rather than being disconnected from project reality.
 
 ## 5. Future Scope: AI Agent Integration
 

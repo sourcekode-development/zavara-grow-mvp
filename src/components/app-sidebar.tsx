@@ -17,6 +17,7 @@ import {
   TrendingUpIcon,
   UsersRoundIcon,
   SparklesIcon,
+  FolderKanbanIcon,
 } from "lucide-react"
 import { useAuthStore } from "@/features/auth/store/auth.store"
 import { UserRole } from "@/shared/types"
@@ -177,6 +178,11 @@ const getNavigationItems = (role?: string) => {
       title: "Teams",
       url: "/teams",
       icon: <UsersRoundIcon />,
+    },
+    {
+      title: "Projects",
+      url: "/projects",
+      icon: <FolderKanbanIcon />,
     },
   ];
 

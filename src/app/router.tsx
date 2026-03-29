@@ -30,6 +30,8 @@ import { UpskillProgramDetailPage } from "@/features/upskill/pages/upskill-progr
 import { UpskillProgramEditPage } from "@/features/upskill/pages/upskill-program-edit.page";
 import { UpskillTemplatesPage } from "@/features/upskill/pages/upskill-templates.page";
 import { UpskillReviewPage } from "@/features/upskill/pages/upskill-review.page";
+import { ProjectsPage } from "@/features/projects/pages/projects.page";
+import { ProjectDetailPage } from "@/features/projects/pages/project-detail.page";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -120,6 +122,8 @@ export const AppRouter = () => {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/teams" element={<TeamsPage />} />
             <Route path="/teams/:teamId" element={<TeamDetailPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
 
             {/* Goals Routes */}
             <Route path="/goals" element={<GoalsPage />} />

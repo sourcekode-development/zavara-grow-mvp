@@ -57,6 +57,90 @@ We need a dedicated table to track pending invitations. This acts as a secure wa
 - `joined_at` (Timestamp)
 - _(Primary Key is a composite of `team_id` + `user_id` to prevent duplicate memberships)._
 
+### Project and Client Allocation Layer
+
+This layer was added so Zavara Grow can represent both:
+
+- service-based companies with external `clients -> projects`
+- service-based companies with internal company-owned projects
+- product companies that only manage internal projects
+
+The core rule is: **every company has projects**, while `client_id` is optional and used only when a project belongs to an external client.
+
+**Enum: `project_kind_enum`**
+
+- `CLIENT_DELIVERY`
+- `INTERNAL_PRODUCT`
+- `INTERNAL_INITIATIVE`
+
+**Enum: `project_status_enum`**
+
+- `ACTIVE`
+- `ON_HOLD`
+- `COMPLETED`
+- `ARCHIVED`
+
+**Enum: `project_member_role_enum`**
+
+- `DEVELOPER`
+- `PROJECT_MANAGER`
+- `DELIVERY_OWNER`
+
+**Table: `clients`**
+
+- `id` (UUID, Primary Key)
+- `company_id` (UUID, Foreign Key): Links to `companies`
+- `name` (String, Required)
+- `description` (Text, Nullable)
+- `created_by` (UUID, Foreign Key): Links to `user_profiles.id`
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- Clients are company-scoped.
+- Client names are unique inside a company.
+- Clients are optional at the project level. Internal work should not require a fake client row.
+
+**Table: `projects`**
+
+- `id` (UUID, Primary Key)
+- `company_id` (UUID, Foreign Key): Links to `companies`
+- `client_id` (UUID, Foreign Key, Nullable): Links to `clients`
+- `name` (String, Required)
+- `description` (Text, Nullable)
+- `project_kind` (Enum): `CLIENT_DELIVERY`, `INTERNAL_PRODUCT`, `INTERNAL_INITIATIVE`
+- `status` (Enum): `ACTIVE`, `ON_HOLD`, `COMPLETED`, `ARCHIVED`
+- `created_by` (UUID, Foreign Key): Links to `user_profiles.id`
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- `client_id = NULL` means the project is internal/company-owned.
+- Project names are unique inside a company.
+- This table is intentionally generic so the same schema works for service companies and product companies.
+
+**Table: `project_members`**
+
+- `id` (UUID, Primary Key)
+- `project_id` (UUID, Foreign Key): Links to `projects`
+- `user_id` (UUID, Foreign Key): Links to `user_profiles`
+- `project_role` (Enum): `DEVELOPER`, `PROJECT_MANAGER`, `DELIVERY_OWNER`
+- `joined_at` (Date): When the person started on the project
+- `left_at` (Date, Nullable): Leave/end date when they stop being active on the project
+- `is_primary_reviewer` (Boolean): Whether this assignment is the primary review owner for KPI/survey workflows
+- `assigned_by` (UUID, Foreign Key): Admin/Lead who created the assignment
+- `removed_by` (UUID, Foreign Key, Nullable): Admin/Lead who ended the assignment
+- `removed_at` (Timestamp, Nullable): When the assignment was soft removed
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- `project_members` is history-first. A developer can join the same project multiple times across different periods.
+- Removing a member is a **soft delete**, not a hard delete. We preserve history because KPI reviews, surveys, and other downstream records may still depend on that assignment context.
+- Only one active assignment per `(project_id, user_id)` is allowed at a time.
+- Only one active `is_primary_reviewer = true` assignment is allowed per project at a time.
+- `DELIVERY_OWNER` exists for lead-owned or senior-developer-owned delivery where no dedicated project manager exists.
+
 ### How the Access Logic Works in Your API (or Row Level Security)
 
 With this schema, you can easily enforce the exact rules you laid out at the database query level:
@@ -75,258 +159,25 @@ With this schema, you can easily enforce the exact rules you laid out at the dat
 - _Query:_ `SELECT t.* FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.user_id = {user.id}`
 - **CRUD:** No permissions to create, update, or delete teams.
 
----
+### Access Logic for Clients and Projects
 
-## GOALS WORKFLOW (Developer-Centric)
+- **COMPANY_ADMIN**
+- Full create/update access on `clients`, `projects`, and `project_members` inside their company.
+- Can view all company clients and projects.
 
-**Phase 1: Creation (DRAFT)**
+- **TEAM_LEAD**
+- Full create/update access on `clients`, `projects`, and `project_members` inside their company.
+- Unlike the current `teams` behavior, this feature allows leads to manage all company project records, not only ones they created.
 
-- Developer creates goal with title (only required field)
-- Adds milestones, configures frequency (DAILY/WEEKDAYS/WEEKENDS/CUSTOM)
-- Can manually create cadence_sessions or let system auto-generate later
-- Adds checkpoints if needed
-- Submits for review → Status: PENDING_REVIEW
-
-**Phase 2: Review**
-
-- TEAM_LEAD/COMPANY_ADMIN reviews and approves/modifies/requests changes
-- All actions logged in `goal_reviews` for audit trail
-- If approved → Status: APPROVED
-
-**Phase 3: Execution (IN_PROGRESS)**
-
-- Developer starts goal, system generates sessions if needed
-- Updates session status: TO_DO → IN_PROGRESS → COMPLETED
-- System tracks streaks automatically
-- When checkpoint reached:
-  - Status: READY_FOR_REVIEW
-  - Reviewer submits assessment (pass/fail, feedback, score)
-  - If failed: action_items guide remediation
-- Completes all sessions → Status: COMPLETED
-
-**Phase 4: Sharing**
-
-- Successful goals can be made public
-- Other developers duplicate and customize for their needs
-
-### 2. The Blueprint (Templates) - OPTIONAL
-
-**Table: `goal_templates**` _(Optional for backward compatibility)_
-
-- `id` (UUID, Primary Key)
-- `company_id` (UUID, Foreign Key, Nullable): If this is NULL, it means it's a **Global Zavara Template** available to everyone. If it has an ID, it's private to that specific company.
-- `title` (String): e.g., "AWS Cloud Practitioner Mastery"
-- `description` (Text, Nullable)
-- `created_by` (UUID, Foreign Key): Admin/Lead who created this template
-- `is_active` (Boolean): Whether this template is currently available
+- **DEVELOPER**
+- Read-only access.
+- Can view only projects where they have an active or historical `project_members` row.
+- Can open project details for those visible projects.
+- Cannot create/edit clients, create/edit projects, or add/remove/edit project members.
 
 ---
 
-### 3. The Execution Engine (Goals & Milestones) - REDESIGNED
-
-**Table: `goals**` _(Developer-Centric with Review Workflow)_
-
-**Core Fields:**
-
-- `id` (UUID, Primary Key)
-- `created_by` (UUID, Foreign Key): **The developer who created this goal**
-- `user_id` (UUID, Foreign Key): The developer assigned to execute this goal
-- `assigned_by` (UUID, Foreign Key, Nullable): Admin/Lead who assigned (null if self-created)
-- `duplicated_from` (UUID, Foreign Key, Nullable): Reference to original goal if duplicated
-- `template_id` (UUID, Foreign Key, Nullable): If generated from a template
-
-**Goal Details:**
-
-- `title` (String, Required): Only required field for DRAFT creation
-- `description` (Text, Nullable): Can add later
-- `total_duration_days` (Integer, Nullable): Calculated from milestones
-- `status` (Enum): `DRAFT`, `PENDING_REVIEW`, `CHANGES_REQUESTED`, `APPROVED`, `IN_PROGRESS`, `ON_HOLD`, `BLOCKED`, `COMPLETED`, `ABANDONED`
-- `start_date` (Date, Nullable): Set when goal starts
-- `target_end_date` (Date, Nullable): Calculated when approved
-- `actual_end_date` (Date, Nullable): When actually completed
-
-**Frequency Configuration:**
-
-- `frequency_type` (Enum, Nullable): `DAILY`, `WEEKDAYS`, `WEEKENDS`, `CUSTOM`
-- `frequency_config` (JSONB, Nullable): Schedule details
-  ```json
-  {
-    "days": [1, 2, 3, 4, 5],
-    "duration_minutes": 60,
-    "time": "18:00" // optional
-  }
-  ```
-
-**Effort & Analytics:**
-
-- `effort` (Numeric, Nullable): Total effort required to complete the goal (e.g., story points).
-- `effort_description` (Text, Nullable): Informational text for effort unit definition.
-- `completed_effort` (Numeric): Total completed effort value.
-- `last_effort_date` (Date, Nullable): Date when completed effort last increased for streak calculation.
-- `current_streak` (Integer): Current consecutive days of recorded effort without missing.
-- `longest_streak` (Integer): Best streak achieved.
-- `total_sessions` (Integer): Total cadence sessions
-- `completed_sessions` (Integer): Completed sessions count
-
-**Review Metadata:**
-
-- `reviewed_by` (UUID, Foreign Key, Nullable): Who reviewed the goal
-- `reviewed_at` (Timestamp, Nullable): When reviewed
-- `review_comments` (Text, Nullable): Review feedback
-
-**Sharing:**
-
-- `is_public` (Boolean): Can other developers duplicate this?
-- `duplication_count` (Integer): Times this goal was duplicated
-
-**Table: `milestones**` _(Phases within a goal)_
-
-- `id` (UUID, Primary Key)
-- `goal_id` (UUID, Foreign Key)
-- `title` (String, Required)
-- `description` (Text, Nullable): Can add details later
-- `order_index` (Integer): 1, 2, 3 (chronological order)
-- `duration_days` (Integer, Nullable): Estimated days for this phase
-- `estimated_sessions` (Integer, Nullable): Calculated sessions
-- `status` (Enum): `PENDING`, `ACTIVE`, `COMPLETED`
-- `started_at` (Timestamp, Nullable)
-- `completed_at` (Timestamp, Nullable)
-
----
-
-### 4. Cadence Sessions (Created Before OR After Goal Approval)
-
-_Developers can manually create sessions during DRAFT, or let system auto-generate after approval._
-
-**Table: `cadence_sessions**`
-
-- `id` (UUID, Primary Key)
-- `goal_id` (UUID, Foreign Key)
-- `milestone_id` (UUID, Foreign Key, Nullable): Can be standalone
-- `session_index` (Integer, Nullable): Auto-assigned if not provided
-- `title` (String, Nullable): Custom title by developer
-- `description` (Text, Nullable): What they plan to do
-- `scheduled_date` (Date, Nullable): Can schedule later
-- `duration_minutes` (Integer, Default 60): Session duration
-- `session_effort` (Numeric, Default 1): Planned effort for this session; supports decimals.
-- `completed_effort` (Numeric, Default 0): Actual effort completed in this session; supports decimals.
-- `status` (Enum): `TO_DO`, `IN_PROGRESS`, `COMPLETED`, `DUE`, `MISSED`, `SKIPPED`
-- `summary_text` (Text, Nullable): What they actually accomplished
-- `skip_reason` (Text, Nullable): If status is SKIPPED
-- `started_at` (Timestamp, Nullable)
-- `completed_at` (Timestamp, Nullable)
-- `calendar_event_id` (String, Nullable): For calendar integration
-- `is_auto_generated` (Boolean): System vs. manual creation
-
----
-
-### 5. Quality Control (Checkpoints & Assessments) - ENHANCED
-
-**Table: `checkpoints**` _(Validation points with review workflow)_
-
-- `id` (UUID, Primary Key)
-- `goal_id` (UUID, Foreign Key)
-- `milestone_id` (UUID, Foreign Key, Nullable)
-- `title` (String, Required)
-- `description` (Text, Nullable)
-- `trigger_type` (String, Nullable): `AFTER_DAYS`, `AFTER_MILESTONE`, `MANUAL`
-- `trigger_config` (JSONB, Nullable): Trigger configuration
-  ```json
-  {
-    "after_days": 15,
-    "from_start": true
-  }
-  ```
-- `scheduled_date` (Date, Nullable): Can be null for milestone-triggered
-- `type` (Enum): `MANUAL_REVIEW`, `AI_INTERVIEW`
-- `status` (Enum): `PENDING`, `READY_FOR_REVIEW`, `REVIEW_IN_PROGRESS`, `NEEDS_ATTENTION`, `PASSED`, `SKIPPED`
-- `assigned_reviewer_id` (UUID, Foreign Key, Nullable): Assigned reviewer
-- `review_started_at` (Timestamp, Nullable)
-
-**Table: `assessments**` _(Checkpoint Results & Reviews)_
-
-**This is where COMPANY_ADMIN/TEAM_LEAD submit their checkpoint reviews.**
-
-- `id` (UUID, Primary Key)
-- `checkpoint_id` (UUID, Foreign Key)
-- `reviewer_id` (UUID, Foreign Key, Nullable): Who reviewed (null = AI)
-- `passed` (Boolean, Required): **Did developer pass?**
-- `score` (Integer, Nullable): Optional score (0-100)
-- `feedback_text` (Text, Nullable): Overall feedback
-- `strengths` (Text, Nullable): What went well
-- `areas_for_improvement` (Text, Nullable): What needs work
-- `action_items` (JSONB, Nullable): Micro-goals if failed
-  ```json
-  [
-    {
-      "task": "Re-do AWS IAM module",
-      "duration_minutes": 120,
-      "priority": "HIGH",
-      "resources": ["link1", "link2"]
-    }
-  ]
-  ```
-- `attachments` (JSONB, Nullable): Supporting documents
-  ```json
-  [
-    {
-      "type": "video",
-      "url": "s3://...",
-      "name": "Mock interview recording"
-    }
-  ]
-  ```
-- `review_duration_minutes` (Integer, Nullable): Review duration
-- `reviewed_at` (Timestamp): When assessment was submitted
-
----
-
-### 6. Goal Review Audit Trail (NEW)
-
-**Table: `goal_reviews**` _(Tracks all review actions)_
-
-- `id` (UUID, Primary Key)
-- `goal_id` (UUID, Foreign Key)
-- `reviewer_id` (UUID, Foreign Key): Who performed the review
-- `action` (String): `REQUESTED_CHANGES`, `APPROVED`, `MODIFIED`, `REJECTED`
-- `comments` (Text, Nullable): Review feedback
-- `changes_made` (JSONB, Nullable): What was modified
-  ```json
-  {
-    "milestones": {
-      "added": [...],
-      "removed": [...],
-      "modified": [...]
-    },
-    "frequency": {
-      "old": {...},
-      "new": {...}
-    }
-  }
-  ```
-- `previous_status` (Enum): Status before review
-- `new_status` (Enum): Status after review
-- `created_at` (Timestamp): When review occurred
-
----
-
-### 7. Streak Analytics (NEW)
-
-**Table: `goal_streak_history**` _(Daily snapshots for leaderboards)_
-
-- `id` (UUID, Primary Key)
-- `goal_id` (UUID, Foreign Key)
-- `user_id` (UUID, Foreign Key)
-- `date` (Date): Snapshot date
-- `streak_count` (Integer): Streak at this date
-- `sessions_completed_today` (Integer): Sessions completed on this date
-- `created_at` (Timestamp)
-
-**Unique constraint:** `(goal_id, date)` - One record per goal per day
-
----
-
-### 8. Up Skill Programs (Parallel Learning System)
+### 2. Up Skill Programs (Parallel Learning System)
 
 This feature runs alongside `goals` for now and is intended to become the more flexible long-term upskilling engine.
 
@@ -345,7 +196,7 @@ This feature runs alongside `goals` for now and is intended to become the more f
 - `upskill_module_status`: `TODO`, `IN_PROGRESS`, `COMPLETED`, `WONT_DO`
 - `upskill_review_decision`: `PENDING`, `APPROVED`, `CHANGES_REQUESTED`, `AUTO_CLOSED`
 
-#### 8.1 Templates
+#### 2.1 Templates
 
 **Table: `upskill_program_templates`**
 
@@ -371,7 +222,7 @@ This feature runs alongside `goals` for now and is intended to become the more f
 - `content_plain_text` (Text, Nullable): Searchable/plain-text version of content
 - `created_at` / `updated_at` (Timestamp)
 
-#### 8.2 Program Execution
+#### 2.2 Program Execution
 
 **Table: `upskill_programs`**
 
@@ -421,7 +272,7 @@ This feature runs alongside `goals` for now and is intended to become the more f
 - Modules are intentionally flexible and can be added or edited even after approval and during execution.
 - Module completion is manual-first; logged effort informs dashboards and review context but does not automatically force a module to complete.
 
-#### 8.3 Review Workflow
+#### 2.3 Review Workflow
 
 **Table: `upskill_program_reviews`**
 
@@ -441,7 +292,7 @@ This feature runs alongside `goals` for now and is intended to become the more f
 - Remaining pending reviewer rows are marked `AUTO_CLOSED`.
 - If a reviewer requests changes before anyone approves, the program returns to `DRAFT`.
 
-#### 8.4 Effort Logging and Analytics
+#### 2.4 Effort Logging and Analytics
 
 **Table: `upskill_module_effort_logs`**
 
@@ -474,7 +325,7 @@ This feature runs alongside `goals` for now and is intended to become the more f
 
 ---
 
-### 9. The KPI Configuration (The Library)
+### 3. The KPI Configuration (The Library)
 
 These tables define the "Global" and "Company-specific" rules for performance tracking.
 
@@ -504,7 +355,7 @@ These tables define the "Global" and "Company-specific" rules for performance tr
 
 ---
 
-### 10. The KPI Execution (The Developer Snapshot)
+### 4. The KPI Execution (The Developer Snapshot)
 
 When a Tech Lead assigns a KPI, the data is "snapshotted" so it remains unchanged even if the template is edited later.
 
@@ -528,7 +379,7 @@ When a Tech Lead assigns a KPI, the data is "snapshotted" so it remains unchange
 
 ---
 
-### 10. The Evidence Ledger & Final Review
+### 5. The Evidence Ledger & Final Review
 
 Developers submit daily "proof of work" which Leads verify, building up points over time.
 
