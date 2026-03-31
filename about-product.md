@@ -5,7 +5,7 @@
 - **Name:** Zavara Grow
 - **Tagline:** Turn bench time into billable value and measure developer impact.
 - **Category:** B2B SaaS for IT Service Companies.
-- **The Vision:** While traditional ATS platforms bring talent into a company, Zavara Grow takes ownership of the developer's lifecycle post-hire. It provides a unified ecosystem for Tech Leads and Management to assign learning goals, run structured up skill programs, validate developer growth, and conduct traditional performance appraisals (KPIs)—ultimately ensuring developers can be billed to clients at premium rates faster.
+- **The Vision:** While traditional ATS platforms bring talent into a company, Zavara Grow takes ownership of the developer's lifecycle post-hire. It provides a unified ecosystem for Tech Leads and Management to run structured UpSkill programs, validate developer growth, and conduct traditional performance appraisals (KPIs), ultimately ensuring developers can be billed to clients at premium rates faster.
 
 ## 2. The Problem It Solves
 
@@ -27,21 +27,21 @@ _Note for AI Context: The system utilizes a strict "Blueprint vs. Snapshot" data
 - **User Profiles:** Acts as a resource map for Management & Sales (tracking skills, domains, certifications, and project allocation status).
 - **Roles:**
   - `COMPANY_ADMIN`: Full visibility and template management.
-- `TEAM_LEAD`: Assigns goals, conducts reviews, monitors team dashboards.
-- `DEVELOPER`: Executes daily cadences and submits self-assessments.
+- `TEAM_LEAD`: Reviews UpSkill programs, conducts assessments, and monitors team dashboards.
+- `DEVELOPER`: Executes UpSkill modules, logs effort, and submits self-assessments.
 
-### B. Developer-Centric Goal Management
+### B. Developer-Centric UpSkill Management
 
-**Developers take ownership** of their upskilling journey:
+**Developers take ownership** of their upskilling journey through structured UpSkill programs:
 
-- **Self-Creation:** Developers create their own learning goals (e.g., "Become AWS Certified Solutions Architect").
-- **Flexible Planning:** Break goals into milestones, configure frequency (daily, weekdays, custom), plan cadence sessions.
-- **Review Workflow:** Submit goals for Team Lead/Admin approval before starting.
-- **Duplication & Sharing:** Successful goals can be duplicated by other developers for peer collaboration.
+- **Self-Creation:** Developers can create their own UpSkill programs (e.g., "Become AWS Certified Solutions Architect") or start from reusable company templates.
+- **Module-Based Planning:** Each program is broken into modules with descriptions, estimated effort, learning resources, and execution notes.
+- **Review Workflow:** Programs are submitted to Team Leads/Admins for approval before formal execution.
+- **Reusable Learning Paths:** Strong programs can be promoted into templates or cloned by other developers for peer collaboration.
 
-### C. Up Skill Programs (Parallel Learning System)
+### C. UpSkill Programs (Core Learning System)
 
-Alongside goals, Zavara Grow now supports a more flexible **Up Skill Program** model designed for evolving learning journeys:
+Zavara Grow's learning engine is built around a flexible **UpSkill Program** model designed for evolving learning journeys:
 
 - **Template-Driven or Scratch Built:** Developers can create a program from scratch or clone a reusable company template that already contains modules.
 - **Module-Based Planning:** Each program is broken into modules containing title, description, estimated effort, and rich learning content such as links, course references, notes, and internal knowledge.
@@ -52,14 +52,14 @@ Alongside goals, Zavara Grow now supports a more flexible **Up Skill Program** m
 
 ### D. Cadence Tracking & Streak System
 
-Goals are executed via honor-system daily/weekly cadence with built-in accountability, driven by flexible "effort" units:
+UpSkill programs are executed through an honor-system cadence with built-in accountability, driven by flexible "effort" units:
 
-- Developers commit to a frequency and duration, tracking progress via **Effort** units. Effort acts like a story point—for one developer, 1 effort = 1 hour; for another, 1 effort = 1 day, depending on the goal's context.
-- Can manually create sessions upfront or let system auto-generate after approval.
-- Track progress with completed effort and status transitions: TO_DO → IN_PROGRESS → COMPLETED.
-- **Streak Tracking:** System automatically tracks consecutive days without missing sessions (and adding effort) for peer motivation, incorporating a brief grace period to maintain continuity.
+- Developers log progress via **Effort** units. Effort acts like a story point. For one developer, 1 effort = 1 hour; for another, 1 effort = 1 day, depending on the program's context.
+- Teams can structure execution around lightweight cadence expectations without forcing rigid planning objects.
+- Track progress with effort logs, module status transitions, and overall program completion.
+- **Streak Tracking:** The system automatically tracks consecutive active days with a brief grace period to maintain continuity and encourage momentum.
 - **Team Visibility:** Dashboards show everyone's progress, creating healthy peer pressure.
-- **Up Skill Streaks:** The newer up skill engine tracks both per-program streaks and overall developer streaks using effort logs, with a configurable grace period so a short gap does not instantly reset momentum.
+- **UpSkill Streaks:** The UpSkill engine tracks both per-program streaks and overall developer streaks using effort logs, with a configurable grace period so a short gap does not instantly reset momentum.
 
 ### E. Checkpoints & Validation
 
@@ -68,7 +68,7 @@ To validate knowledge retention (not just task completion):
 - Checkpoints triggered at key milestones or after N days of learning.
 - Team Leads conduct manual reviews (mock interviews, work assessments).
 - Submit detailed assessments: pass/fail, score, feedback, strengths, areas for improvement.
-- If failed: Action items (micro-goals) guide developer back on track.
+- If failed: Action items and remediation guidance help the developer get back on track.
 - **Future:** AI-driven automated interviews for instant validation.
 
 ### F. Evidence-Based KPI Appraisals
@@ -103,7 +103,7 @@ This gives the platform a better operational picture of:
 Failure triggers corrective action, not dead ends:
 
 - Failed checkpoints issue **"Needs Attention"** soft flags.
-- System/Reviewer generates **action items** (micro-goals) to address gaps.
+- System/Reviewer generates targeted **action items** to address gaps.
 - Developer must complete remedial work before advancing.
 - Focus on continuous improvement rather than penalization.
 
@@ -118,7 +118,7 @@ Failure triggers corrective action, not dead ends:
 
 Future releases will offload manual Tech Lead tasks to specialized AI Agents.
 
-- **AI Mock Interviewer:** The AI will parse the developer's daily honor-system text summaries, contextualize them against the Goal Template, and dynamically generate highly specific technical questions to verify their claims via chat or audio.
-- **Automated Checkpoints:** Transitioning "Manual Reviews" to AI-driven assessments, providing unbiased, immediate feedback and automatically generating Dynamic Pivot micro-goals based on the AI's technical evaluation.
+- **AI Mock Interviewer:** The AI will parse the developer's execution summaries and effort history, contextualize them against the UpSkill program and module structure, and dynamically generate highly specific technical questions to verify their claims via chat or audio.
+- **Automated Checkpoints:** Transitioning "Manual Reviews" to AI-driven assessments, providing unbiased, immediate feedback and automatically generating Dynamic Pivot action items based on the AI's technical evaluation.
 
 ---
