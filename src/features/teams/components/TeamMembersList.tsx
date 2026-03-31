@@ -1,4 +1,4 @@
-import { Users, Calendar, TrendingUp, Target } from 'lucide-react';
+import { Users, Calendar, Target } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -170,46 +170,6 @@ export const TeamMembersList = ({ members, isLoading }: TeamMembersListProps) =>
               </div>
 
               {/* Recent KPI */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <TrendingUp className="w-4 h-4 text-[#3DCF8E]" />
-                  Recent KPI
-                </div>
-                {member.recent_kpi ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-2">
-                        {member.recent_kpi.kpi_title}
-                      </span>
-                      <Badge
-                        variant="secondary"
-                        className={getStatusBadgeColor(member.recent_kpi.status)}
-                      >
-                        {member.recent_kpi.status}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <Progress
-                        value={member.recent_kpi.total_score_percentage}
-                        className="h-2"
-                      />
-                      <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-                        <span>
-                          {member.recent_kpi.accumulated_points}/{member.recent_kpi.target_points} pts
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {formatDate(member.recent_kpi.last_updated)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    No active KPI
-                  </p>
-                )}
-              </div>
             </div>
 
             {/* Member Info Footer */}

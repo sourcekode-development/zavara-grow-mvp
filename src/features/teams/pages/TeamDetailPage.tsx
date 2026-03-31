@@ -303,15 +303,6 @@ export const TeamDetailPage = () => {
                 {membersWithProgress.filter((m) => m.recent_goal).length}
               </p>
             </div>
-
-            <div className="bg-white dark:bg-[#1A2633] rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                Active KPIs
-              </h3>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {membersWithProgress.filter((m) => m.recent_kpi).length}
-              </p>
-            </div>
           </div>
         </TabsContent>
 

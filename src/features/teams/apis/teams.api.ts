@@ -10,7 +10,6 @@ import type {
   UpdateTeamFormData,
   AddTeamMemberFormData,
   MemberGoalProgress,
-  MemberKpiProgress,
 } from '../types';
 
 /**
@@ -211,13 +210,11 @@ export const getTeamMembersWithProgress = async (
     const membersWithProgress = await Promise.all(
       members.map(async (member) => {
         try {
-          const [goalData, kpiData] = await Promise.all([
-            teamsRepo.getMemberRecentGoal(member.user_id),
-            teamsRepo.getMemberRecentKpi(member.user_id),
+          const [goalData] = await Promise.all([
+            teamsRepo.getMemberRecentGoal(member.user_id)
           ]);
 
           let recentGoal: MemberGoalProgress | undefined;
-          let recentKpi: MemberKpiProgress | undefined;
 
           if (goalData) {
             // Calculate progress percentage based on completed sessions
@@ -237,44 +234,15 @@ export const getTeamMembersWithProgress = async (
             };
           }
 
-          if (kpiData) {
-            // Calculate accumulated points from metrics
-            const metrics = (kpiData as any).metrics || [];
-            const totalAccumulated = metrics.reduce(
-              (sum: number, m: any) => sum + (m.accumulated_points || 0),
-              0
-            );
-            const totalTarget = metrics.reduce(
-              (sum: number, m: any) => sum + (m.target_points || 0),
-              0
-            );
-            
-            const scorePercentage = totalTarget > 0
-              ? Math.round((totalAccumulated / totalTarget) * 100)
-              : 0;
-
-            recentKpi = {
-              kpi_id: kpiData.id,
-              kpi_title: kpiData.title,
-              status: kpiData.status,
-              total_score_percentage: scorePercentage,
-              accumulated_points: totalAccumulated,
-              target_points: totalTarget || 1000,
-              last_updated: kpiData.start_date || new Date().toISOString(),
-            };
-          }
-
           return {
             ...member,
-            recent_goal: recentGoal,
-            recent_kpi: recentKpi,
+            recent_goal: recentGoal
           };
         } catch {
           // If progress fetch fails, return member without progress
           return {
             ...member,
             recent_goal: undefined,
-            recent_kpi: undefined,
           };
         }
       })

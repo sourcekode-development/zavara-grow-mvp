@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/features/auth/store/auth.store';
 import { UserRole } from '@/shared/types';
 import { useManagedUserProfile } from '../hooks/useManagedUserProfile';
-import { UserKpisOverviewTab } from '../components/user-kpis-overview-tab';
 import { UserProfileDetailsTab } from '../components/user-profile-details-tab';
 import { UserUpskillOverviewTab } from '../components/user-upskill-overview-tab';
 
@@ -28,7 +27,7 @@ export const UserDetailPage = () => {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuthStore();
-  const { profile, upskillPrograms, kpis, isLoading, error } = useManagedUserProfile(userId);
+  const { profile, upskillPrograms, isLoading, error } = useManagedUserProfile(userId);
 
   const canManageUsers = useMemo(
     () =>
@@ -134,7 +133,7 @@ export const UserDetailPage = () => {
                   </p>
                   <p className="mt-2 flex items-center gap-2 text-2xl font-semibold">
                     <Target className="h-5 w-5 text-[#3DCF8E]" />
-                    {kpis.length}
+                    {/* {kpis.length} */}
                   </p>
                 </div>
               </div>
@@ -145,7 +144,7 @@ export const UserDetailPage = () => {
             <TabsList className="w-full justify-start bg-white dark:bg-[#1A2633]">
               <TabsTrigger value="profile">Profile Details</TabsTrigger>
               <TabsTrigger value="upskill">Upskill</TabsTrigger>
-              <TabsTrigger value="kpis">KPIs</TabsTrigger>
+              {/* <TabsTrigger value="kpis">KPIs</TabsTrigger> */}
             </TabsList>
 
             <TabsContent value="profile" className="mt-0">
@@ -157,7 +156,7 @@ export const UserDetailPage = () => {
             </TabsContent>
 
             <TabsContent value="kpis" className="mt-0">
-              <UserKpisOverviewTab kpis={kpis} />
+              {/* <UserKpisOverviewTab kpis={kpis} /> */}
             </TabsContent>
           </Tabs>
         </>

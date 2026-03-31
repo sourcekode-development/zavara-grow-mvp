@@ -32,19 +32,8 @@ export interface MemberGoalProgress {
   last_updated: string;
 }
 
-export interface MemberKpiProgress {
-  kpi_id: string;
-  kpi_title: string;
-  status: string;
-  total_score_percentage: number;
-  accumulated_points: number;
-  target_points: number;
-  last_updated: string;
-}
-
 export interface TeamMemberWithProgress extends TeamMemberWithProfile {
   recent_goal?: MemberGoalProgress;
-  recent_kpi?: MemberKpiProgress;
 }
 
 // ============================================================================

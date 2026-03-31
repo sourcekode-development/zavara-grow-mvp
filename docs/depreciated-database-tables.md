@@ -246,3 +246,89 @@ _Developers can manually create sessions during DRAFT, or let system auto-genera
 **Unique constraint:** `(goal_id, date)` - One record per goal per day
 
 ---
+
+### 3. The KPI Configuration (The Library)
+
+These tables define the "Global" and "Company-specific" rules for performance tracking.
+
+**Table: `kpi_categories**`
+
+- `id` (UUID, Primary Key)
+- `company_id` (UUID, Foreign Key, Nullable): NULL means it's a Zavara default.
+- `name` (String): e.g., "Technical Excellence", "Soft Skills".
+- `description` (Text): What this category measures.
+
+**Table: `kpi_templates**`
+
+- `id` (UUID, Primary Key)
+- `company_id` (UUID, Foreign Key, Nullable): NULL means global Zavara template.
+- `title` (String): e.g., "Senior MERN Developer - Q3".
+- `cycle_type` (Enum): `QUARTERLY`, `HALF_YEARLY`, `ANNUAL`, `CUSTOM`.
+- `total_target_points` (Integer): Always 1,000 for standard weighting.
+
+**Table: `kpi_template_metrics**`
+
+- `id` (UUID, Primary Key)
+- `template_id` (UUID, Foreign Key): Links to `kpi_templates`.
+- `category_id` (UUID, Foreign Key): Links to `kpi_categories`.
+- `name` (String): e.g., "PR Review Quality".
+- `target_points` (Integer): The "weight" of this item (e.g., 200 out of 1,000).
+- `description` (Text): Guidelines on how to earn these points.
+
+---
+
+### 4. The KPI Execution (The Developer Snapshot)
+
+When a Tech Lead assigns a KPI, the data is "snapshotted" so it remains unchanged even if the template is edited later.
+
+**Table: `developer_kpis**`
+
+- `id` (UUID, Primary Key)
+- `user_id` (UUID, Foreign Key): The developer.
+- `assigned_by` (UUID, Foreign Key): The Tech Lead.
+- `title` (String): Copied from template.
+- `status` (Enum): `ACTIVE`, `COMPLETED`, `ARCHIVED`.
+- `start_date` / `end_date` (Date): The performance cycle window.
+
+**Table: `developer_kpi_metrics**`
+
+- `id` (UUID, Primary Key)
+- `developer_kpi_id` (UUID, Foreign Key): Links to `developer_kpis`.
+- `category_id` (UUID, Foreign Key): Links to `kpi_categories`.
+- `name` (String): Copied from template.
+- `target_points` (Integer): e.g., 300.
+- `accumulated_points` (Integer): Starts at 0, updated as claims are approved.
+
+---
+
+### 5. The Evidence Ledger & Final Review
+
+Developers submit daily "proof of work" which Leads verify, building up points over time.
+
+**Table: `kpi_metric_submissions**`
+
+- `id` (UUID, Primary Key)
+- `metric_id` (UUID, Foreign Key): Links to `developer_kpi_metrics`.
+- `developer_id` (UUID, Foreign Key): The developer submitting the claim.
+- `description` (Text): e.g., "I mentored Sujai on WebRTC for 2 hours."
+- `screenshot_paths` (JSONB): Array of Supabase Storage object paths for claim screenshots (max 2).
+- `status` (Enum): `PENDING`, `APPROVED`, `REJECTED`, `CHANGES_REQUESTED`.
+- `points_awarded` (Integer): Assigned by Lead upon approval.
+- `reviewer_id` (UUID, Foreign Key): The Lead who reviewed.
+- `reviewer_comments` (Text): Feedback on this specific submission.
+- `created_at` / `reviewed_at` (Timestamp)
+
+**Table: `kpi_reviews**`
+
+- `id` (UUID, Primary Key)
+- `developer_kpi_id` (UUID, Foreign Key): Links to `developer_kpis`.
+- `final_score_percentage` (Numeric): `(Total Accumulated Points / 1000) × 100`.
+- `summary_feedback` (Text): Overall cycle feedback.
+- `status` (Enum): `DRAFT`, `FINALIZED`.
+
+### The Workflow
+
+1. Developer submits evidence → `kpi_metric_submissions` row created with `PENDING` status.
+2. Lead reviews → Updates status to `APPROVED` and assigns `points_awarded`.
+3. System auto-increments `accumulated_points` in `developer_kpi_metrics`.
+4. At cycle end → Lead finalizes review, system calculates `final_score_percentage`.

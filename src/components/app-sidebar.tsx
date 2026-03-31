@@ -14,7 +14,7 @@ import {
   LayoutDashboardIcon, 
   UsersIcon, 
   // TargetIcon, 
-  TrendingUpIcon,
+  // TrendingUpIcon,
   UsersRoundIcon,
   SparklesIcon,
   FolderKanbanIcon,
@@ -87,50 +87,24 @@ const getNavigationItems = (role?: string) => {
   // ];
 
   // KPI items for developers (view only)
-  const developerKpiItems = [
-    {
-      title: "KPIs",
-      url: "/kpis/your-kpis",
-      icon: <TrendingUpIcon />,
-      items: [
-        {
-          title: "Your KPIs",
-          url: "/kpis/your-kpis",
-        },
-      ],
-    },
-  ];
+  // const developerKpiItems = [
+  //   {
+  //     title: "KPIs",
+  //     url: "/kpis/your-kpis",
+  //     icon: <TrendingUpIcon />,
+  //     items: [],
+  //   },
+  // ];
 
   // KPI items for Team Leads and Admins (full management)
-  const managementKpiItems = [
-    {
-      title: "KPIs",
-      url: "/kpis/templates",
-      icon: <TrendingUpIcon />,
-      items: [
-        {
-          title: "Templates",
-          url: "/kpis/templates",
-        },
-        {
-          title: "Categories",
-          url: "/kpis/categories",
-        },
-        {
-          title: "Developer KPIs",
-          url: "/kpis/developer-kpis",
-        },
-        {
-          title: "Claims",
-          url: "/kpis/claims",
-        },
-        {
-          title: "Your KPIs",
-          url: "/kpis/your-kpis",
-        },
-      ],
-    },
-  ];
+  // const managementKpiItems = [
+  //   {
+  //     title: "KPIs",
+  //     url: "/kpis/templates",
+  //     icon: <TrendingUpIcon />,
+  //     items: [],
+  //   },
+  // ];
 
   const developerUpskillItems = [
     {
@@ -211,7 +185,7 @@ const getNavigationItems = (role?: string) => {
       ...baseItems,
       // ...managementGoalItems,
       ...managementUpskillItems,
-      ...managementKpiItems,
+      // ...managementKpiItems,
       ...teamItems,
       ...adminItems,
     ];
@@ -220,7 +194,7 @@ const getNavigationItems = (role?: string) => {
       ...baseItems,
       // ...managementGoalItems,
       ...managementUpskillItems,
-      ...managementKpiItems,
+      // ...managementKpiItems,
       ...teamItems,
     ];
   } else {
@@ -229,7 +203,7 @@ const getNavigationItems = (role?: string) => {
       ...baseItems,
       // ...developerGoalItems,
       ...developerUpskillItems,
-      ...developerKpiItems,
+      // ...developerKpiItems,
       ...teamItems,
     ];
   }

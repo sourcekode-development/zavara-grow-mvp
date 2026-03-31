@@ -19,11 +19,6 @@ import { UserDetailPage } from "@/features/users/pages/user-detail.page";
 import { AppLayout } from "@/app/layout";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useEffect } from "react";
-import { KpiTemplatesPage } from "@/features/kpis/pages/kpi-templates.page";
-import { KpiCategoriesPage } from "@/features/kpis/pages/kpi-categories.page";
-import { DevelopersKpisListPage } from "@/features/kpis/pages/developers-kpis-list.page";
-import { KpiClaimsPage } from "@/features/kpis/pages/kpi-claims.page";
-import { YourKpisPage } from "@/features/kpis/pages/your-kpis.page";
 import { UpskillProgramsPage } from "@/features/upskill/pages/upskill-programs.page";
 import { UpskillProgramCreatePage } from "@/features/upskill/pages/upskill-program-create.page";
 import { UpskillProgramDetailPage } from "@/features/upskill/pages/upskill-program-detail.page";
@@ -136,11 +131,6 @@ export const AppRouter = () => {
             <Route path="/checkpoints" element={<CheckpointsListPage />} />
 
             {/* KPI Routes */}
-            <Route path="/kpis/templates" element={<KpiTemplatesPage />} />
-            <Route path="/kpis/categories" element={<KpiCategoriesPage />} />
-            <Route path="/kpis/developer-kpis" element={<DevelopersKpisListPage />} />
-            <Route path="/kpis/claims" element={<KpiClaimsPage />} />
-            <Route path="/kpis/your-kpis" element={<YourKpisPage />} />
 
             {/* Up Skill Routes */}
             <Route path="/up-skill" element={<UpskillProgramsPage />} />
