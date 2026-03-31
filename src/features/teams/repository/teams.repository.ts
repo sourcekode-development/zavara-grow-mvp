@@ -211,27 +211,6 @@ export const getMemberRecentGoal = async (userId: string) => {
   return data;
 };
 
-export const getMemberRecentKpi = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('developer_kpis')
-    .select(`
-      id,
-      title,
-      status,
-      start_date,
-      end_date,
-      metrics:developer_kpi_metrics(accumulated_points, target_points)
-    `)
-    .eq('user_id', userId)
-    .eq('status', 'ACTIVE')
-    .order('start_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
-};
-
 // ============================================================================
 // USERS QUERY FOR MEMBER ADDITION
 // ============================================================================
