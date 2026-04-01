@@ -2,11 +2,13 @@
 
 User authentication is handled by their internal `auth.users` table. We will create a `user_profiles` table that links to it.
 
-> **🔄 Goals Feature Redesigned (March 1, 2026):** The goals system has been redesigned to be **developer-centric** with a review workflow. Developers now create goals themselves, submit for review, and can duplicate successful goals from peers. See sections 2-7 for details.
+> **🔄 Goals Feature Redesigned (March 1, 2026):** The goals system has been redesigned to be **developer-centric** with a review workflow. Developers now create goals themselves, submit for review, and can duplicate successful goals from peers.
 
-> **🆕 Up Skill Feature Added (March 18, 2026):** A new `up skill` engine now exists in parallel with goals. It is module-based, review-driven, and designed to better support flexible learning plans, on-the-fly updates, effort logging, and dashboard-heavy team visibility. See section 8 for details.
+> **🆕 Up Skill Feature Added (March 18, 2026):** A new `up skill` engine now exists in parallel with goals. It is module-based, review-driven, and designed to better support flexible learning plans, on-the-fly updates, effort logging, and dashboard-heavy team visibility.
 
-**Table: `companies**`
+> **🆕 KPI Feature Rebuilt (March 31, 2026):** The KPI system has been rebuilt as a continuous, claim-based scoring engine using dimensions, metrics, active KPI snapshots, reviewer approvals, and impact metrics. See the KPI section below.
+
+**Table: `companies`**
 
 - `id` (UUID, Primary Key)
 - `name` (String): Name of the service-based company.
@@ -14,7 +16,7 @@ User authentication is handled by their internal `auth.users` table. We will cre
 
 We need a dedicated table to track pending invitations. This acts as a secure waiting room before a user is officially written into `auth.users` and `user_profiles`.
 
-**Table: `company_invites**`
+**Table: `company_invites`**
 
 - `id` (UUID, Primary Key)
 - `company_id` (UUID, Foreign Key): Links to `companies`.
@@ -26,7 +28,7 @@ We need a dedicated table to track pending invitations. This acts as a secure wa
 - `expires_at` (Timestamp): Usually set to 48 or 72 hours from creation.
 - `created_at` (Timestamp)
 
-**Table: `user_profiles**`
+**Table: `user_profiles`**
 
 - `id` (UUID, Primary Key): This should match the Supabase `auth.users.id`.
 - `company_id` (UUID, Foreign Key)
@@ -177,7 +179,187 @@ With this schema, you can easily enforce the exact rules you laid out at the dat
 
 ---
 
-### 2. Up Skill Programs (Parallel Learning System)
+### 2. KPI Performance Engine
+
+This feature replaces the older appraisal-style KPI model with a continuous 1,000-point scoring system.
+
+**Core Workflow**
+
+- Admins and Team Leads create reusable KPI dimensions, metrics, and templates.
+- Templates define dimension weights and standard metric point caps.
+- When assigned to a developer, template data is copied into active KPI snapshot tables.
+- Users submit claims with evidence against active KPI metrics.
+- Assigned reviewers approve or reject claims and award partial or full points.
+- Impact metrics allow out-of-band recognition without changing the 1,000-point baseline denominator.
+
+**Status Enums**
+
+- `scope_enum`: `PLATFORM`, `COMPANY`
+- `kpi_status`: `ACTIVE`, `CLOSED`
+- `claim_status`: `PENDING`, `APPROVED`, `REJECTED`
+- `audit_action`: `SUBMITTED`, `APPROVED`, `REJECTED`, `COMMENTED`
+
+#### 2.1 KPI Library
+
+**Table: `dimensions`**
+
+- `id` (UUID, Primary Key)
+- `name` (String, Required)
+- `description` (Text, Nullable)
+- `scope` (Enum): `PLATFORM`, `COMPANY`
+- `company_id` (UUID, Foreign Key, Nullable): Required when `scope = COMPANY`, null for `PLATFORM`
+- `created_by` (UUID, Foreign Key, Nullable)
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- `PLATFORM` dimensions are shared library items.
+- `COMPANY` dimensions belong to a single tenant company.
+- In the current MVP UI, platform records are treated as read-only library records.
+
+**Table: `metrics`**
+
+- `id` (UUID, Primary Key)
+- `dimension_id` (UUID, Foreign Key): Links to `dimensions`
+- `name` (String, Required)
+- `description` (Text, Nullable)
+- `how_to_measure` (Text, Nullable)
+- `scope` (Enum): `PLATFORM`, `COMPANY`
+- `company_id` (UUID, Foreign Key, Nullable): Required when `scope = COMPANY`, null for `PLATFORM`
+- `created_by` (UUID, Foreign Key, Nullable)
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- Metrics always belong to a dimension.
+- The library is reusable across templates and impact-recognition flows.
+
+**Table: `kpi_templates`**
+
+- `id` (UUID, Primary Key)
+- `name` (String, Required)
+- `description` (Text, Nullable)
+- `scope` (Enum): `PLATFORM`, `COMPANY`
+- `company_id` (UUID, Foreign Key, Nullable)
+- `created_by` (UUID, Foreign Key)
+- `created_at` / `updated_at` (Timestamp)
+
+**Table: `template_dimensions`**
+
+- `template_id` (UUID, Foreign Key)
+- `dimension_id` (UUID, Foreign Key)
+- `weight_percentage` (Numeric)
+- `created_at` (Timestamp)
+
+**Table: `template_metrics`**
+
+- `template_id` (UUID, Foreign Key)
+- `metric_id` (UUID, Foreign Key)
+- `max_points` (Integer)
+- `created_at` (Timestamp)
+
+**Important behavior**
+
+- Template dimensions must total exactly `100%`.
+- Template standard metrics must total exactly `1000` points.
+- These validations are currently enforced in application code for the MVP.
+
+#### 2.2 Active KPI Snapshots
+
+**Table: `assigned_kpis`**
+
+- `id` (UUID, Primary Key)
+- `developer_id` (UUID, Foreign Key): Links to `user_profiles`
+- `template_id` (UUID, Foreign Key, Nullable): Source template for traceability
+- `status` (Enum): `ACTIVE`, `CLOSED`
+- `start_date` (Date)
+- `end_date` (Date)
+- `total_target_points` (Integer, Default `1000`)
+- `created_by` (UUID, Foreign Key): Admin/Lead who assigned the KPI
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- Only one `ACTIVE` KPI per developer is allowed at a time.
+- This record is the container for the developer's scoring period.
+
+**Table: `kpi_reviewers`**
+
+- `kpi_id` (UUID, Foreign Key)
+- `reviewer_id` (UUID, Foreign Key)
+- `created_at` (Timestamp)
+
+**Important behavior**
+
+- At least one reviewer is required during assignment.
+- Reviewer choices are restricted to users from the assigning actor's company.
+- Only users listed here can approve or reject claims.
+
+**Table: `kpi_dimensions`**
+
+- `kpi_id` (UUID, Foreign Key)
+- `dimension_id` (UUID, Foreign Key)
+- `weight_percentage` (Numeric)
+- `created_at` (Timestamp)
+
+**Table: `kpi_metrics`**
+
+- `id` (UUID, Primary Key)
+- `kpi_id` (UUID, Foreign Key)
+- `metric_id` (UUID, Foreign Key): Links to reusable library metric
+- `max_points` (Integer)
+- `is_impact_metric` (Boolean)
+- `created_at` / `updated_at` (Timestamp)
+
+**Important behavior**
+
+- When a KPI is assigned, all template dimensions and standard metrics are copied into these snapshot tables.
+- Later edits to the source template do not affect active KPIs.
+- Standard KPI metrics across a KPI must total exactly `assigned_kpis.total_target_points` in application logic.
+- Impact metrics are separate bonus metrics and do not count toward the baseline denominator.
+
+#### 2.3 Claims and Review Audit
+
+**Table: `claims`**
+
+- `id` (UUID, Primary Key)
+- `kpi_id` (UUID, Foreign Key)
+- `metric_id` (UUID, Foreign Key): References `kpi_metrics.id`
+- `submitter_id` (UUID, Foreign Key)
+- `status` (Enum): `PENDING`, `APPROVED`, `REJECTED`
+- `evidence_text` (Text, Required)
+- `evidence_attachments` (JSONB, Nullable): Reserved for future attachment metadata
+- `awarded_points` (Integer, Nullable)
+- `created_at` / `updated_at` (Timestamp)
+
+**Table: `claim_audit_logs`**
+
+- `id` (UUID, Primary Key)
+- `claim_id` (UUID, Foreign Key)
+- `actor_id` (UUID, Foreign Key)
+- `action` (Enum): `SUBMITTED`, `APPROVED`, `REJECTED`, `COMMENTED`
+- `comment_text` (Text, Nullable)
+- `created_at` (Timestamp)
+
+**Important behavior**
+
+- Anyone in the flow can submit a claim with evidence for an active KPI.
+- Reviewers can approve a claim for partial points, not only full points.
+- Remaining metric points are derived from:
+  - `kpi_metrics.max_points - sum(awarded_points of approved claims for that kpi_metric)`
+- Multiple approved claims can accumulate against the same metric until the metric cap is exhausted.
+- Impact metric claims follow the same partial-award logic but contribute bonus points only.
+
+#### 2.4 Access and Workflow Notes
+
+- `COMPANY_ADMIN` and `TEAM_LEAD` create/update company-scoped dimensions, metrics, templates, and KPI assignments.
+- `DEVELOPER` and other company users can submit claims, but they cannot assign KPI templates or manage the library.
+- `PLATFORM` library items are visible in the MVP but not editable through the current UI.
+- The current MVP intentionally keeps the heavier assignment/review workflow logic in application code rather than DB functions.
+
+---
+
+### 3. Up Skill Programs (Parallel Learning System)
 
 This feature runs alongside `goals` for now and is intended to become the more flexible long-term upskilling engine.
 
@@ -196,7 +378,7 @@ This feature runs alongside `goals` for now and is intended to become the more f
 - `upskill_module_status`: `TODO`, `IN_PROGRESS`, `COMPLETED`, `WONT_DO`
 - `upskill_review_decision`: `PENDING`, `APPROVED`, `CHANGES_REQUESTED`, `AUTO_CLOSED`
 
-#### 2.1 Templates
+#### 3.1 Templates
 
 **Table: `upskill_program_templates`**
 
@@ -222,7 +404,7 @@ This feature runs alongside `goals` for now and is intended to become the more f
 - `content_plain_text` (Text, Nullable): Searchable/plain-text version of content
 - `created_at` / `updated_at` (Timestamp)
 
-#### 2.2 Program Execution
+#### 3.2 Program Execution
 
 **Table: `upskill_programs`**
 
@@ -272,7 +454,7 @@ This feature runs alongside `goals` for now and is intended to become the more f
 - Modules are intentionally flexible and can be added or edited even after approval and during execution.
 - Module completion is manual-first; logged effort informs dashboards and review context but does not automatically force a module to complete.
 
-#### 2.3 Review Workflow
+#### 3.3 Review Workflow
 
 **Table: `upskill_program_reviews`**
 
@@ -292,7 +474,7 @@ This feature runs alongside `goals` for now and is intended to become the more f
 - Remaining pending reviewer rows are marked `AUTO_CLOSED`.
 - If a reviewer requests changes before anyone approves, the program returns to `DRAFT`.
 
-#### 2.4 Effort Logging and Analytics
+#### 3.4 Effort Logging and Analytics
 
 **Table: `upskill_module_effort_logs`**
 

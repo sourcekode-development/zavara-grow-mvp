@@ -27,6 +27,12 @@ import { UpskillTemplatesPage } from "@/features/upskill/pages/upskill-templates
 import { UpskillReviewPage } from "@/features/upskill/pages/upskill-review.page";
 import { ProjectsPage } from "@/features/projects/pages/projects.page";
 import { ProjectDetailPage } from "@/features/projects/pages/project-detail.page";
+import { MyKpisPage } from "@/features/kpis/pages/my-kpis.page";
+import { KpiTemplatesPage } from "@/features/kpis/pages/kpi-templates.page";
+import { KpiDimensionsPage } from "@/features/kpis/pages/kpi-dimensions.page";
+import { KpiMetricsPage } from "@/features/kpis/pages/kpi-metrics.page";
+import { KpiClaimsPage } from "@/features/kpis/pages/kpi-claims.page";
+import { KpiDetailPage } from "@/features/kpis/pages/kpi-detail.page";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -131,6 +137,13 @@ export const AppRouter = () => {
             <Route path="/checkpoints" element={<CheckpointsListPage />} />
 
             {/* KPI Routes */}
+            <Route path="/kpis/my" element={<MyKpisPage />} />
+            <Route path="/kpis/my/:kpiId" element={<KpiDetailPage />} />
+            <Route path="/kpis/templates" element={<KpiTemplatesPage />} />
+            <Route path="/kpis/dimensions" element={<KpiDimensionsPage />} />
+            <Route path="/kpis/metrics" element={<KpiMetricsPage />} />
+            <Route path="/kpis/claims" element={<KpiClaimsPage />} />
+            <Route path="/kpis/assigned/:kpiId" element={<KpiDetailPage />} />
 
             {/* Up Skill Routes */}
             <Route path="/up-skill" element={<UpskillProgramsPage />} />

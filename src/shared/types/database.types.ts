@@ -1167,6 +1167,513 @@ export type Database = {
           },
         ]
       }
+      assigned_kpis: {
+        Row: {
+          created_at: string
+          created_by: string
+          developer_id: string
+          end_date: string
+          id: string
+          start_date: string
+          status: Database["public"]["Enums"]["kpi_status"]
+          template_id: string | null
+          total_target_points: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          developer_id: string
+          end_date: string
+          id?: string
+          start_date: string
+          status?: Database["public"]["Enums"]["kpi_status"]
+          template_id?: string | null
+          total_target_points?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          developer_id?: string
+          end_date?: string
+          id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["kpi_status"]
+          template_id?: string | null
+          total_target_points?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assigned_kpis_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assigned_kpis_developer_id_fkey"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assigned_kpis_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_audit_logs: {
+        Row: {
+          action: Database["public"]["Enums"]["audit_action"]
+          actor_id: string
+          claim_id: string
+          comment_text: string | null
+          created_at: string
+          id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["audit_action"]
+          actor_id: string
+          claim_id: string
+          comment_text?: string | null
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["audit_action"]
+          actor_id?: string
+          claim_id?: string
+          comment_text?: string | null
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_audit_logs_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claims: {
+        Row: {
+          awarded_points: number | null
+          created_at: string
+          evidence_attachments: Json | null
+          evidence_text: string
+          id: string
+          kpi_id: string
+          metric_id: string
+          status: Database["public"]["Enums"]["claim_status"]
+          submitter_id: string
+          updated_at: string
+        }
+        Insert: {
+          awarded_points?: number | null
+          created_at?: string
+          evidence_attachments?: Json | null
+          evidence_text: string
+          id?: string
+          kpi_id: string
+          metric_id: string
+          status?: Database["public"]["Enums"]["claim_status"]
+          submitter_id: string
+          updated_at?: string
+        }
+        Update: {
+          awarded_points?: number | null
+          created_at?: string
+          evidence_attachments?: Json | null
+          evidence_text?: string
+          id?: string
+          kpi_id?: string
+          metric_id?: string
+          status?: Database["public"]["Enums"]["claim_status"]
+          submitter_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claims_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "assigned_kpis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_submitter_id_fkey"
+            columns: ["submitter_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dimensions: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          scope: Database["public"]["Enums"]["scope_enum"]
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          scope: Database["public"]["Enums"]["scope_enum"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          scope?: Database["public"]["Enums"]["scope_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dimensions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dimensions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_dimensions: {
+        Row: {
+          created_at: string
+          dimension_id: string
+          kpi_id: string
+          weight_percentage: number
+        }
+        Insert: {
+          created_at?: string
+          dimension_id: string
+          kpi_id: string
+          weight_percentage: number
+        }
+        Update: {
+          created_at?: string
+          dimension_id?: string
+          kpi_id?: string
+          weight_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_dimensions_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_dimensions_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "assigned_kpis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_metrics: {
+        Row: {
+          created_at: string
+          id: string
+          is_impact_metric: boolean
+          kpi_id: string
+          max_points: number
+          metric_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_impact_metric?: boolean
+          kpi_id: string
+          max_points: number
+          metric_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_impact_metric?: boolean
+          kpi_id?: string
+          max_points?: number
+          metric_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_metrics_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "assigned_kpis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_metrics_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "metrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_reviewers: {
+        Row: {
+          created_at: string
+          kpi_id: string
+          reviewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          kpi_id: string
+          reviewer_id: string
+        }
+        Update: {
+          created_at?: string
+          kpi_id?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_reviewers_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "assigned_kpis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_reviewers_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_templates: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          scope: Database["public"]["Enums"]["scope_enum"]
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          scope: Database["public"]["Enums"]["scope_enum"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          scope?: Database["public"]["Enums"]["scope_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metrics: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          dimension_id: string
+          how_to_measure: string | null
+          id: string
+          name: string
+          scope: Database["public"]["Enums"]["scope_enum"]
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          dimension_id: string
+          how_to_measure?: string | null
+          id?: string
+          name: string
+          scope: Database["public"]["Enums"]["scope_enum"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          dimension_id?: string
+          how_to_measure?: string | null
+          id?: string
+          name?: string
+          scope?: Database["public"]["Enums"]["scope_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_dimensions: {
+        Row: {
+          created_at: string
+          dimension_id: string
+          template_id: string
+          weight_percentage: number
+        }
+        Insert: {
+          created_at?: string
+          dimension_id: string
+          template_id: string
+          weight_percentage: number
+        }
+        Update: {
+          created_at?: string
+          dimension_id?: string
+          template_id?: string
+          weight_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_dimensions_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "dimensions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_dimensions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_metrics: {
+        Row: {
+          created_at: string
+          max_points: number
+          metric_id: string
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          max_points: number
+          metric_id: string
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          max_points?: number
+          metric_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_metrics_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "metrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_metrics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           allocation_status:
@@ -1248,6 +1755,7 @@ export type Database = {
     }
     Enums: {
       allocation_status_enum: "BILLABLE" | "BENCH" | "INTERNAL_PROJECT"
+      audit_action: "SUBMITTED" | "APPROVED" | "REJECTED" | "COMMENTED"
       cadence_session_status:
         | "TO_DO"
         | "IN_PROGRESS"
@@ -1263,6 +1771,7 @@ export type Database = {
         | "PASSED"
         | "SKIPPED"
       checkpoint_type: "MANUAL_REVIEW" | "AI_INTERVIEW"
+      claim_status: "PENDING" | "APPROVED" | "REJECTED"
       frequency_type: "DAILY" | "WEEKDAYS" | "WEEKENDS" | "CUSTOM"
       goal_status:
         | "DRAFT"
@@ -1275,7 +1784,9 @@ export type Database = {
         | "COMPLETED"
         | "ABANDONED"
       invite_status: "PENDING" | "ACCEPTED" | "EXPIRED" | "REVOKED"
+      kpi_status: "ACTIVE" | "CLOSED"
       milestone_status: "PENDING" | "ACTIVE" | "COMPLETED"
+      scope_enum: "PLATFORM" | "COMPANY"
       upskill_module_status:
         | "TODO"
         | "IN_PROGRESS"
@@ -1421,6 +1932,7 @@ export const Constants = {
   public: {
     Enums: {
       allocation_status_enum: ["BILLABLE", "BENCH", "INTERNAL_PROJECT"],
+      audit_action: ["SUBMITTED", "APPROVED", "REJECTED", "COMMENTED"],
       cadence_session_status: [
         "TO_DO",
         "IN_PROGRESS",
@@ -1429,6 +1941,7 @@ export const Constants = {
         "MISSED",
         "SKIPPED",
       ],
+      claim_status: ["PENDING", "APPROVED", "REJECTED"],
       checkpoint_status: [
         "PENDING",
         "READY_FOR_REVIEW",
@@ -1451,7 +1964,9 @@ export const Constants = {
         "ABANDONED",
       ],
       invite_status: ["PENDING", "ACCEPTED", "EXPIRED", "REVOKED"],
+      kpi_status: ["ACTIVE", "CLOSED"],
       milestone_status: ["PENDING", "ACTIVE", "COMPLETED"],
+      scope_enum: ["PLATFORM", "COMPANY"],
       upskill_module_status: [
         "TODO",
         "IN_PROGRESS",

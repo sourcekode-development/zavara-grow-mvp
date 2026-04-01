@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Briefcase, Flame, Target } from 'lucide-react';
+import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,10 @@ import { UserRole } from '@/shared/types';
 import { useManagedUserProfile } from '../hooks/useManagedUserProfile';
 import { UserProfileDetailsTab } from '../components/user-profile-details-tab';
 import { UserUpskillOverviewTab } from '../components/user-upskill-overview-tab';
+import { UserKpisOverviewTab } from '../components/user-kpis-overview-tab';
+import { useState } from 'react';
+import { KpiAssignmentDrawer } from '@/features/kpis/components/kpi-assignment-drawer';
+import { useCompanyReviewers, useKpiActions, useKpiTemplates, useKpiUserSummary } from '@/features/kpis/hooks/useKpis';
 
 const getInitials = (name: string) =>
   name
@@ -27,7 +32,15 @@ export const UserDetailPage = () => {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuthStore();
-  const { profile, upskillPrograms, isLoading, error } = useManagedUserProfile(userId);
+  const { profile, upskillPrograms, kpis, isLoading, error } = useManagedUserProfile(userId);
+  const { summary: kpiSummary, refetch: refetchKpiSummary } = useKpiUserSummary(userId);
+  const { templates } = useKpiTemplates({
+    company_id: user?.profile?.company_id,
+    scope: 'ALL',
+  });
+  const { reviewers } = useCompanyReviewers(user?.profile?.company_id, user?.profile?.role);
+  const { assignKpi } = useKpiActions();
+  const [assignmentOpen, setAssignmentOpen] = useState(false);
 
   const canManageUsers = useMemo(
     () =>
@@ -133,18 +146,29 @@ export const UserDetailPage = () => {
                   </p>
                   <p className="mt-2 flex items-center gap-2 text-2xl font-semibold">
                     <Target className="h-5 w-5 text-[#3DCF8E]" />
-                    {/* {kpis.length} */}
+                    {kpiSummary?.total_kpis || 0}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {canManageUsers ? (
+            <div className="flex justify-end">
+              <Button
+                className="bg-[#3DCF8E] text-white hover:bg-[#2fb577]"
+                onClick={() => setAssignmentOpen(true)}
+              >
+                Assign KPI
+              </Button>
+            </div>
+          ) : null}
+
           <Tabs defaultValue="profile" className="gap-6">
             <TabsList className="w-full justify-start bg-white dark:bg-[#1A2633]">
               <TabsTrigger value="profile">Profile Details</TabsTrigger>
               <TabsTrigger value="upskill">Upskill</TabsTrigger>
-              {/* <TabsTrigger value="kpis">KPIs</TabsTrigger> */}
+              <TabsTrigger value="kpis">KPIs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="profile" className="mt-0">
@@ -156,11 +180,28 @@ export const UserDetailPage = () => {
             </TabsContent>
 
             <TabsContent value="kpis" className="mt-0">
-              {/* <UserKpisOverviewTab kpis={kpis} /> */}
+              <UserKpisOverviewTab kpis={kpis} />
             </TabsContent>
           </Tabs>
         </>
       )}
+
+      {profile && user?.id && user?.profile?.company_id ? (
+        <KpiAssignmentDrawer
+          open={assignmentOpen}
+          onOpenChange={setAssignmentOpen}
+          developerId={profile.id}
+          developerName={profile.full_name}
+          templates={templates}
+          reviewers={reviewers.filter((reviewer) => reviewer.reviewer_id !== profile.id)}
+          onSubmit={async (request) => {
+            const kpiId = await assignKpi(user.id, user.profile?.role, request);
+            toast.success('KPI assigned');
+            await refetchKpiSummary();
+            navigate(`/kpis/assigned/${kpiId}`);
+          }}
+        />
+      ) : null}
     </div>
   );
 };

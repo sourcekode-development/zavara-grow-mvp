@@ -14,7 +14,7 @@ import {
   LayoutDashboardIcon, 
   UsersIcon, 
   // TargetIcon, 
-  // TrendingUpIcon,
+  TrendingUpIcon,
   UsersRoundIcon,
   SparklesIcon,
   FolderKanbanIcon,
@@ -86,25 +86,53 @@ const getNavigationItems = (role?: string) => {
   //   },
   // ];
 
-  // KPI items for developers (view only)
-  // const developerKpiItems = [
-  //   {
-  //     title: "KPIs",
-  //     url: "/kpis/your-kpis",
-  //     icon: <TrendingUpIcon />,
-  //     items: [],
-  //   },
-  // ];
+  const developerKpiItems = [
+    {
+      title: "KPIs",
+      url: "/kpis/my",
+      icon: <TrendingUpIcon />,
+      items: [
+        {
+          title: "Your KPI",
+          url: "/kpis/my",
+        },
+        {
+          title: "Claims",
+          url: "/kpis/claims",
+        },
+      ],
+    },
+  ];
 
-  // KPI items for Team Leads and Admins (full management)
-  // const managementKpiItems = [
-  //   {
-  //     title: "KPIs",
-  //     url: "/kpis/templates",
-  //     icon: <TrendingUpIcon />,
-  //     items: [],
-  //   },
-  // ];
+  const managementKpiItems = [
+    {
+      title: "KPIs",
+      url: "/kpis/templates",
+      icon: <TrendingUpIcon />,
+      items: [
+        {
+          title: "Your KPI",
+          url: "/kpis/my",
+        },
+        {
+          title: "Claims",
+          url: "/kpis/claims",
+        },
+        {
+          title: "KPI Templates",
+          url: "/kpis/templates",
+        },
+        {
+          title: "Dimensions",
+          url: "/kpis/dimensions",
+        },
+        {
+          title: "Metrics",
+          url: "/kpis/metrics",
+        },
+      ],
+    },
+  ];
 
   const developerUpskillItems = [
     {
@@ -183,27 +211,27 @@ const getNavigationItems = (role?: string) => {
   if (role === UserRole.COMPANY_ADMIN) {
     return [
       ...baseItems,
+      ...managementKpiItems,
       // ...managementGoalItems,
       ...managementUpskillItems,
-      // ...managementKpiItems,
       ...teamItems,
       ...adminItems,
     ];
   } else if (role === UserRole.TEAM_LEAD) {
     return [
       ...baseItems,
+      ...managementKpiItems,
       // ...managementGoalItems,
       ...managementUpskillItems,
-      // ...managementKpiItems,
       ...teamItems,
     ];
   } else {
     // DEVELOPER or default
     return [
       ...baseItems,
+      ...developerKpiItems,
       // ...developerGoalItems,
       ...developerUpskillItems,
-      // ...developerKpiItems,
       ...teamItems,
     ];
   }
