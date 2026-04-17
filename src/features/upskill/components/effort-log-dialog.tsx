@@ -45,17 +45,12 @@ export const EffortLogDialog = ({
       ? 'Enter a valid number.'
       : effortUsedNumber <= 0
       ? 'Effort must be greater than 0.'
-      : effortUsedNumber > remainingEffort
-      ? `You can log at most ${remainingEffort.toFixed(1)} more hour${
-          remainingEffort === 1 ? '' : 's'
-        }.`
       : undefined;
 
   const isSubmitDisabled =
     isSubmitting ||
     !effortUsed ||
-    !!effortValidationError ||
-    remainingEffort <= 0;
+    !!effortValidationError;
 
   const handleSubmit = async () => {
     if (effortValidationError || !effortUsed || !isValidEffortNumber) return;
@@ -99,7 +94,7 @@ export const EffortLogDialog = ({
               id="upskill-log-effort"
               type="number"
               min="0.1"
-              max={remainingEffort > 0 ? remainingEffort : undefined}
+              max={undefined}
               step="0.1"
               value={effortUsed}
               onChange={(event) => setEffortUsed(event.target.value)}
@@ -108,13 +103,9 @@ export const EffortLogDialog = ({
 
             {effortValidationError ? (
               <p className="text-sm text-destructive">{effortValidationError}</p>
-            ) : remainingEffort <= 0 ? (
-              <p className="text-sm text-muted-foreground">
-                This module has no remaining effort to log.
-              </p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                You can log up to {remainingEffort.toFixed(1)} more hour
+                Remaining estimate: {remainingEffort.toFixed(1)} hour
                 {remainingEffort === 1 ? '' : 's'}.
               </p>
             )}
